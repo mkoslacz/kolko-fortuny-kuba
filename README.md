@@ -18,7 +18,9 @@ Każdy zwykły los jest na kole **2×**, a **JACKPOT tylko 1×** — czyli jest 
 
 ## ▶️ Demo na żywo
 
-**https://mkoslacz.github.io/kolko-fortuny-kuba/**
+**https://mateuszkoslacz.com/kolko-fortuny-kuba/**
+
+(działa też `https://mkoslacz.github.io/kolko-fortuny-kuba/` — przekierowuje na powyższy)
 
 ## 🛠️ Jak to działa
 
