@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🎡 Kółko Fortuny — Fancy Restauracja z Kubą</title>
-<meta name="description" content="Losowanie wieczoru w fancy restauracji z Kubą. Zakręć i poznaj swój los: 1,5h czekania, głód, brak miejsc albo JACKPOT — wszystko na raz." />
-<meta property="og:title" content="🎡 Kółko Fortuny — Fancy Restauracja z Kubą" />
-<meta property="og:description" content="Zakręć kołem i poznaj swój gastronomiczny los z Kubą." />
+<title>🎡 Wheel of Fortune — Fancy Restaurant with Kuba</title>
+<meta name="description" content="Spin to discover your fate for a fancy-restaurant evening with Kuba: a 1.5h wait, hunger, no tables, or the JACKPOT — all at once." />
+<meta property="og:title" content="🎡 Wheel of Fortune — Fancy Restaurant with Kuba" />
+<meta property="og:description" content="Spin the wheel and discover your culinary fate with Kuba." />
 <meta property="og:type" content="website" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -240,28 +240,28 @@
 </head>
 <body>
   <div class="topline">★ Bon Appétit ★</div>
-  <h1>Kółko Fortuny<br />Fancy Restauracja z Kubą</h1>
-  <p class="subtitle">Rezerwacja zrobiona, oczekiwania wysokie, Kuba wybrał miejsce. Zakręć kołem i poznaj, jak <b>naprawdę</b> skończy się ten wieczór. 🍽️🍷</p>
+  <h1>Wheel of Fortune<br />Fancy Restaurant with Kuba</h1>
+  <p class="subtitle">Reservation booked, expectations high, Kuba picked the place. Spin the wheel and find out how this evening will <b>really</b> end. 🍽️🍷</p>
 
   <div class="stage">
     <div class="pointer"></div>
     <div class="wheel-ring"></div>
-    <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Koło fortuny"></svg>
-    <button class="hub" id="hub" aria-label="Zakręć kołem">KRĘĆ</button>
+    <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Wheel of fortune"></svg>
+    <button class="hub" id="hub" aria-label="Spin the wheel">SPIN</button>
   </div>
 
-  <button class="spin-btn" id="spinBtn">Zakręć kołem</button>
+  <button class="spin-btn" id="spinBtn">Spin the wheel</button>
 
   <div class="result" id="result" role="status" aria-live="polite">
     <div class="emoji" id="rEmoji">🎲</div>
-    <div class="r-title" id="rTitle">Twój los czeka...</div>
-    <p class="r-desc" id="rDesc">Naciśnij „Zakręć kołem", weź głęboki oddech i módl się o stolik.</p>
+    <div class="r-title" id="rTitle">Your fate awaits...</div>
+    <p class="r-desc" id="rDesc">Hit “Spin the wheel”, take a deep breath, and pray for a table.</p>
   </div>
 
   <div class="history" id="history"></div>
 
   <footer>
-    Zrobione dla Kuby i jego nieomylnego gastronomicznego gustu. 🤌<br />
+    Made for Kuba and his infallible taste in restaurants. 🤌<br />
     <span id="counter"></span>
   </footer>
 
@@ -271,46 +271,46 @@
 (function () {
   "use strict";
 
-  // --- Możliwe losy ---
+  // --- Possible outcomes ---
   var OUTCOMES = [
     {
-      emoji: "⏰", label: "1,5h",
-      title: "Czekamy 1,5h",
-      desc: "Rezerwacja na 20:00. O 21:30 kelner rzuca przez ramię: «już za chwileczkę». Kuba zamawia trzecią wodę gazowaną i opowiada, że «tu jest naprawdę warto».",
+      emoji: "⏰", label: "1.5h",
+      title: "We wait 1.5 hours",
+      desc: "Reservation for 8:00 PM. By 9:30 the waiter tosses a “just a moment” over his shoulder. Kuba orders his third sparkling water and insists the place is “totally worth it”.",
       color: "#3f6f8f", colorB: "#34607c"
     },
     {
-      emoji: "😋", label: "Głodni",
-      title: "Wychodzimy głodni",
-      desc: "Porcja wielkości znaczka pocztowego, rachunek wielkości czynszu. W drodze powrotnej awaryjny kebab — ale ciii, nie przy Kubie.",
+      emoji: "😋", label: "Hungry",
+      title: "We leave hungry",
+      desc: "Portion the size of a postage stamp, bill the size of your rent. An emergency kebab on the way home — but shhh, not in front of Kuba.",
       color: "#d98a3d", colorB: "#c2762e"
     },
     {
-      emoji: "🪑", label: "Brak miejsc",
-      title: "Nie ma miejsc",
-      desc: "«Mają państwo rezerwację?» — «Tak.» — «...a my mamy mały problem ze stolikiem.» Klasyk gatunku. Kuba: «to może gdzie indziej?».",
+      emoji: "🪑", label: "No tables",
+      title: "No tables available",
+      desc: "“Do you have a reservation?” — “Yes.” — “...and we have a tiny table situation.” A genre classic. Kuba: “maybe somewhere else?”.",
       color: "#b5454a", colorB: "#9e383d"
     },
     {
-      emoji: "🤷", label: "½ zamówienia",
-      title: "Zapominają co drugi element zamówienia",
-      desc: "Zamawiacie sześć rzeczy, przychodzą trzy. Kuchnia pracuje w trybie «co drugi»: przystawka jest, dania głównego brak, wino jest, kieliszków nie ma. Kelner: «zaraz sprawdzę» (nie sprawdzi).",
+      emoji: "🤷", label: "½ order",
+      title: "They forget every other item of the order",
+      desc: "You order six things, three arrive. The kitchen runs in “every other” mode: starter yes, main course no, wine yes, glasses no. Waiter: “I'll go check” (he won't).",
       color: "#4e8d6e", colorB: "#3f7a5d"
     },
     {
       emoji: "🎰", label: "JACKPOT",
-      title: "JACKPOT — wszystko na raz!",
-      desc: "Czekacie 1,5h, połowa zamówienia nie dociera, stolika właściwie nie ma, a na koniec i tak wychodzicie głodni. KOMPLET! Brawo Kuba, znowu Ty wybierałeś knajpę. 🎉",
+      title: "JACKPOT — all at once!",
+      desc: "You wait 1.5h, half the order never arrives, there's basically no table, and you still leave hungry. THE FULL SET! Well done, Kuba — you picked the place again. 🎉",
       color: "#e7c46c", colorB: "#c79a3a", jackpot: true
     }
   ];
 
-  // Układ segmentów: każdy zwykły los ×2, JACKPOT tylko ×1 (czyli rzadszy)
+  // Segment layout: each normal outcome ×2, JACKPOT only ×1 (so it's the rarest)
   var LAYOUT = [];
-  OUTCOMES.forEach(function (o, i) { LAYOUT.push(i); });                 // każdy los po razie
-  OUTCOMES.forEach(function (o, i) { if (!o.jackpot) LAYOUT.push(i); }); // zwykłe losy drugi raz
-  var SEGMENTS = LAYOUT.length;     // 9 segmentów: 4 losy ×2 + JACKPOT ×1
-  var ANGLE = 360 / SEGMENTS;       // 40° na segment
+  OUTCOMES.forEach(function (o, i) { LAYOUT.push(i); });                 // each outcome once
+  OUTCOMES.forEach(function (o, i) { if (!o.jackpot) LAYOUT.push(i); }); // normal outcomes a second time
+  var SEGMENTS = LAYOUT.length;     // 9 segments: 4 outcomes ×2 + JACKPOT ×1
+  var ANGLE = 360 / SEGMENTS;       // 40° per segment
   var CX = 200, CY = 200, R = 196;
 
   var wheel = document.getElementById("wheel");
@@ -323,13 +323,13 @@
   var historyEl = document.getElementById("history");
   var counterEl = document.getElementById("counter");
 
-  // --- Pomocnicze: punkt na okręgu, kąt liczony zgodnie z ruchem wskazówek od GÓRY ---
+  // --- Helper: point on the circle, angle measured clockwise from the TOP ---
   function pt(deg, radius) {
     var rad = (deg - 90) * Math.PI / 180;
     return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
   }
 
-  // --- Budowa segmentów koła ---
+  // --- Build the wheel segments ---
   function buildWheel() {
     var svg = "";
     for (var k = 0; k < SEGMENTS; k++) {
@@ -344,12 +344,12 @@
              ' A' + R + ' ' + R + ' 0 ' + largeArc + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
              ' Z" fill="' + fill + '" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>';
 
-      // Emoji – zawsze pionowo, blisko obręczy
+      // Emoji – always upright, near the rim
       var mid = start + ANGLE / 2;
       var ep = pt(mid, 158);
       svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="27">' + o.emoji + '</text>';
 
-      // Etykieta – radialnie wzdłuż promienia; lewa połowa obrócona, by tekst był „do góry"
+      // Label – radial along the spoke; left half rotated so the text stays upright
       var flip = mid >= 180;
       var rLabel = 112;
       var lr = flip ? 90 : -90;
@@ -358,12 +358,12 @@
                '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" fill="' + labelFill + '" font-family="Inter, sans-serif">' + o.label + '</text>' +
              '</g>';
     }
-    // Subtelny wewnętrzny pierścień
+    // Subtle inner ring
     svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="2"/>';
     wheel.innerHTML = svg;
   }
 
-  // --- Logika kręcenia ---
+  // --- Spin logic ---
   var spinning = false;
   var currentRotation = 0;
   var spinCount = 0;
@@ -373,7 +373,7 @@
   function setDisabled(d) {
     hub.disabled = d;
     spinBtn.disabled = d;
-    hub.textContent = d ? "..." : "KRĘĆ";
+    hub.textContent = d ? "..." : "SPIN";
   }
 
   function spin() {
@@ -385,18 +385,18 @@
     var k = Math.floor(Math.random() * SEGMENTS);
     var outcome = OUTCOMES[LAYOUT[k]];
 
-    var segCenter = k * ANGLE + ANGLE / 2;                 // kąt środka segmentu (od góry, zgodnie z zegarem)
-    var jitter = (Math.random() - 0.5) * (ANGLE * 0.62);   // żeby nie lądowało zawsze idealnie w środku
+    var segCenter = k * ANGLE + ANGLE / 2;                  // segment-center angle (from top, clockwise)
+    var jitter = (Math.random() - 0.5) * (ANGLE * 0.62);   // so it doesn't always land dead-center
     var targetMod = ((360 - (segCenter + jitter)) % 360 + 360) % 360;
 
     var currentMod = ((currentRotation % 360) + 360) % 360;
     var delta = ((targetMod - currentMod) % 360 + 360) % 360;
-    var spins = 5 + Math.floor(Math.random() * 2);         // 5–6 pełnych obrotów
+    var spins = 5 + Math.floor(Math.random() * 2);         // 5–6 full turns
 
     currentRotation += spins * 360 + delta;
     wheel.style.transform = "rotate(" + currentRotation + "deg)";
 
-    // fallback gdyby transitionend nie odpalił
+    // fallback in case transitionend doesn't fire
     var done = false;
     function reveal() {
       if (done) return;
@@ -414,23 +414,24 @@
     rTitle.textContent = o.title;
     rDesc.textContent = o.desc;
     result.classList.toggle("jackpot", !!o.jackpot);
-    // restart animacji wejścia
+    // restart the entry animation, then scroll the card into view
     void result.offsetWidth;
     result.classList.add("show");
+    result.scrollIntoView({ behavior: "smooth", block: "center" });
 
     spinCount++;
     if (o.jackpot) { jackpotCount++; fireConfetti(); }
 
     historyLog.unshift(o.emoji);
     if (historyLog.length > 12) historyLog.pop();
-    historyEl.innerHTML = "Dotychczasowe losy: <b>" + historyLog.join(" ") + "</b>";
-    counterEl.textContent = "Zakręcono " + spinCount + " × · JACKPOT-ów: " + jackpotCount;
+    historyEl.innerHTML = "Results so far: <b>" + historyLog.join(" ") + "</b>";
+    counterEl.textContent = "Spun " + spinCount + "× · Jackpots: " + jackpotCount;
   }
 
   hub.addEventListener("click", spin);
   spinBtn.addEventListener("click", spin);
 
-  // --- Confetti (canvas) na JACKPOT ---
+  // --- Confetti (canvas) on JACKPOT ---
   var canvas = document.getElementById("confetti");
   var ctx = canvas.getContext("2d");
   var pieces = [];
@@ -497,7 +498,7 @@
     }
   }
 
-  // Skrót klawiszowy: spacja / enter
+  // Keyboard shortcut: space / enter
   document.addEventListener("keydown", function (e) {
     if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
       e.preventDefault();
