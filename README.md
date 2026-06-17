@@ -1,41 +1,41 @@
-# 🎡 Kółko Fortuny — Fancy Restauracja z Kubą
+# 🎡 Wheel of Fortune — Fancy Restaurant with Kuba
 
-Koło fortuny w stylu slevomatowego [kolotoča štěstí](https://www.slevomat.cz/kolotoc-stesti),
-losujące, jak *naprawdę* skończy się wieczór w fancy restauracji wybranej przez Kubę.
+A wheel of fortune in the style of Slevomat's [kolotoč štěstí](https://www.slevomat.cz/kolotoc-stesti),
+spinning up how an evening at a fancy restaurant *chosen by Kuba* will **really** turn out.
 
-## 🎲 Możliwe losy
+## 🎲 Possible outcomes
 
-| Pole | Co się dzieje |
-|------|---------------|
-| ⏰ **Czekamy 1,5h** | Rezerwacja na 20:00, jedzenie kiedyś. |
-| 😋 **Wychodzimy głodni** | Porcja jak znaczek pocztowy, rachunek jak czynsz. |
-| 🪑 **Nie ma miejsc** | „Mają państwo rezerwację?" — „Tak." — „...a my nie." |
-| 🤷 **Zapominają co drugi element zamówienia** | Zamawiacie 6 rzeczy, przychodzą 3. |
-| 🎰 **JACKPOT — wszystko na raz!** | Wszystkie powyższe naraz. |
+| Slice | What happens |
+|-------|--------------|
+| ⏰ **We wait 1.5h** | Reservation for 8 PM, food eventually. |
+| 😋 **We leave hungry** | Portion like a postage stamp, bill like your rent. |
+| 🪑 **No tables available** | "Do you have a reservation?" — "Yes." — "...and we don't." |
+| 🤷 **They forget every other item** | You order 6 things, 3 arrive. |
+| 🎰 **JACKPOT — all at once!** | All of the above, simultaneously. |
 
-Każdy zwykły los jest na kole **2×**, a **JACKPOT tylko 1×** — czyli jest najrzadszy
-(≈ 11% szans; pozostałe po ≈ 22%).
+Each normal outcome appears on the wheel **2×**, while the **JACKPOT appears only 1×** — making it
+the rarest (≈ 11% chance; the others ≈ 22% each).
 
-## ▶️ Demo na żywo
+## ▶️ Live demo
 
 **https://mateuszkoslacz.com/kolko-fortuny-kuba/**
 
-(działa też `https://mkoslacz.github.io/kolko-fortuny-kuba/` — przekierowuje na powyższy)
+(`https://mkoslacz.github.io/kolko-fortuny-kuba/` also works — it redirects to the above)
 
-## 🛠️ Jak to działa
+## 🛠️ How it works
 
-Jeden samodzielny plik [`index.html`](index.html) — SVG + czysty JavaScript, zero zależności.
-Hostowane na GitHub Pages.
+A single self-contained [`index.html`](index.html) — SVG + vanilla JavaScript, zero dependencies.
+Hosted on GitHub Pages.
 
-## 💻 Uruchomienie lokalnie
+## 💻 Run locally
 
-Po prostu otwórz `index.html` w przeglądarce, albo odpal lokalny serwer:
+Just open `index.html` in a browser, or start a local server:
 
 ```bash
 python3 -m http.server 4178
-# potem wejdź na http://localhost:4178
+# then open http://localhost:4178
 ```
 
 ---
 
-🤖 Wygenerowane z [Claude Code](https://claude.com/claude-code)
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
