@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🎡 Kółko Fortuny — Fancy Restauracja z Kubą</title>
+<meta name="description" content="Losowanie wieczoru w fancy restauracji z Kubą. Zakręć i poznaj swój los: 1,5h czekania, głód, brak miejsc albo JACKPOT — wszystko na raz." />
+<meta property="og:title" content="🎡 Kółko Fortuny — Fancy Restauracja z Kubą" />
+<meta property="og:description" content="Zakręć kołem i poznaj swój gastronomiczny los z Kubą." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #e7c46c;
+    --gold-deep: #c79a3a;
+    --bg-0: #1a1228;
+    --bg-1: #2a1b3d;
+    --ink: #f5efe2;
+    --muted: #b9a9c9;
+    --card: rgba(20, 13, 30, 0.72);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #3a2555 0%, transparent 60%),
+      radial-gradient(900px 500px at 80% 110%, #4a2b5f 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-0), var(--bg-1));
+    background-color: var(--bg-0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 48px;
+    overflow-x: hidden;
+  }
+  .topline {
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--gold);
+    opacity: 0.85;
+    margin: 4px 0 6px;
+  }
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 900;
+    font-size: clamp(28px, 6vw, 52px);
+    line-height: 1.05;
+    margin: 0 0 6px;
+    text-align: center;
+    background: linear-gradient(180deg, #fff, var(--gold) 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 30px rgba(231, 196, 108, 0.18);
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: clamp(13px, 2.4vw, 16px);
+    text-align: center;
+    margin: 0 0 22px;
+    max-width: 540px;
+  }
+  .subtitle b { color: var(--ink); }
+
+  .stage {
+    position: relative;
+    width: min(86vw, 460px);
+    aspect-ratio: 1 / 1;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.55));
+  }
+  /* Pointer */
+  .pointer {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    z-index: 5;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 36px solid var(--gold);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  }
+  .pointer::after {
+    content: "";
+    position: absolute;
+    top: -44px;
+    left: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 4px rgba(231, 196, 108, 0.25);
+  }
+
+  .wheel-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 12px;
+    background:
+      conic-gradient(from 0deg, var(--gold), #fff6dc, var(--gold-deep), var(--gold), #fff6dc, var(--gold-deep), var(--gold));
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.25), 0 0 0 2px rgba(255,255,255,0.06);
+  }
+  .wheel {
+    position: absolute;
+    inset: 12px;
+    z-index: 2;
+    border-radius: 50%;
+    transform: rotate(0deg);
+    transition: transform 6s cubic-bezier(0.12, 0.62, 0.06, 1);
+    will-change: transform;
+    display: block;
+  }
+  .wheel text { user-select: none; pointer-events: none; }
+
+  /* Center hub = spin button */
+  .hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 23%;
+    height: 23%;
+    border-radius: 50%;
+    z-index: 6;
+    border: none;
+    cursor: pointer;
+    color: #2a1b10;
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(13px, 3.2vw, 20px);
+    letter-spacing: 0.04em;
+    background: radial-gradient(circle at 35% 30%, #fff6dc, var(--gold) 45%, var(--gold-deep) 100%);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 8px rgba(0,0,0,0.25), inset 0 3px 8px rgba(255,255,255,0.6);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .hub:hover { transform: translate(-50%, -50%) scale(1.05); }
+  .hub:active { transform: translate(-50%, -50%) scale(0.96); }
+  .hub:disabled { cursor: not-allowed; filter: saturate(0.6) brightness(0.9); }
+
+  .spin-btn {
+    margin-top: 18px;
+    padding: 15px 40px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #2a1b10;
+    background: linear-gradient(180deg, #fff6dc, var(--gold) 40%, var(--gold-deep));
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(231, 196, 108, 0.32), inset 0 -3px 6px rgba(0,0,0,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s;
+  }
+  .spin-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(231,196,108,0.42); }
+  .spin-btn:active { transform: translateY(0); }
+  .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Result card */
+  .result {
+    margin-top: 26px;
+    width: min(90vw, 520px);
+    background: var(--card);
+    border: 1px solid rgba(231, 196, 108, 0.28);
+    border-radius: 20px;
+    padding: 22px 24px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .result.show { opacity: 1; transform: translateY(0) scale(1); }
+  .result .emoji { font-size: 56px; line-height: 1; }
+  .result .r-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(22px, 5vw, 30px);
+    margin: 10px 0 8px;
+  }
+  .result .r-desc { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0; }
+  .result.jackpot {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold), 0 20px 60px rgba(231,196,108,0.4);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .result.jackpot .r-title {
+    background: linear-gradient(90deg, var(--gold), #fff6dc, var(--gold));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 1px var(--gold), 0 20px 60px rgba(231,196,108,0.30); }
+    50% { box-shadow: 0 0 0 2px var(--gold), 0 24px 70px rgba(231,196,108,0.55); }
+  }
+
+  .history {
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    max-width: 90vw;
+    min-height: 20px;
+  }
+  .history b { color: var(--gold); font-weight: 600; }
+
+  footer {
+    margin-top: 34px;
+    color: rgba(185,169,201,0.55);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer a { color: var(--muted); }
+
+  canvas#confetti {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wheel { transition: transform 0.4s ease-out; }
+    .result.jackpot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="topline">★ Bon Appétit ★</div>
+  <h1>Kółko Fortuny<br />Fancy Restauracja z Kubą</h1>
+  <p class="subtitle">Rezerwacja zrobiona, oczekiwania wysokie, Kuba wybrał miejsce. Zakręć kołem i poznaj, jak <b>naprawdę</b> skończy się ten wieczór. 🍽️🍷</p>
+
+  <div class="stage">
+    <div class="pointer"></div>
+    <div class="wheel-ring"></div>
+    <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Koło fortuny"></svg>
+    <button class="hub" id="hub" aria-label="Zakręć kołem">KRĘĆ</button>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">Zakręć kołem</button>
+
+  <div class="result" id="result" role="status" aria-live="polite">
+    <div class="emoji" id="rEmoji">🎲</div>
+    <div class="r-title" id="rTitle">Twój los czeka...</div>
+    <p class="r-desc" id="rDesc">Naciśnij „Zakręć kołem", weź głęboki oddech i módl się o stolik.</p>
+  </div>
+
+  <div class="history" id="history"></div>
+
+  <footer>
+    Zrobione dla Kuby i jego nieomylnego gastronomicznego gustu. 🤌<br />
+    <span id="counter"></span>
+  </footer>
+
+  <canvas id="confetti"></canvas>
+
+<script>
+(function () {
+  "use strict";
+
+  // --- Możliwe losy ---
+  var OUTCOMES = [
+    {
+      emoji: "⏰", label: "1,5h",
+      title: "Czekamy 1,5h",
+      desc: "Rezerwacja na 20:00. O 21:30 kelner rzuca przez ramię: «już za chwileczkę». Kuba zamawia trzecią wodę gazowaną i opowiada, że «tu jest naprawdę warto».",
+      color: "#3f6f8f", colorB: "#34607c"
+    },
+    {
+      emoji: "😋", label: "Głodni",
+      title: "Wychodzimy głodni",
+      desc: "Porcja wielkości znaczka pocztowego, rachunek wielkości czynszu. W drodze powrotnej awaryjny kebab — ale ciii, nie przy Kubie.",
+      color: "#d98a3d", colorB: "#c2762e"
+    },
+    {
+      emoji: "🪑", label: "Brak miejsc",
+      title: "Nie ma miejsc",
+      desc: "«Mają państwo rezerwację?» — «Tak.» — «...a my mamy mały problem ze stolikiem.» Klasyk gatunku. Kuba: «to może gdzie indziej?».",
+      color: "#b5454a", colorB: "#9e383d"
+    },
+    {
+      emoji: "🤷", label: "½ zamówienia",
+      title: "Zapominają co drugi element zamówienia",
+      desc: "Zamawiacie sześć rzeczy, przychodzą trzy. Kuchnia pracuje w trybie «co drugi»: przystawka jest, dania głównego brak, wino jest, kieliszków nie ma. Kelner: «zaraz sprawdzę» (nie sprawdzi).",
+      color: "#4e8d6e", colorB: "#3f7a5d"
+    },
+    {
+      emoji: "🎰", label: "JACKPOT",
+      title: "JACKPOT — wszystko na raz!",
+      desc: "Czekacie 1,5h, połowa zamówienia nie dociera, stolika właściwie nie ma, a na koniec i tak wychodzicie głodni. KOMPLET! Brawo Kuba, znowu Ty wybierałeś knajpę. 🎉",
+      color: "#e7c46c", colorB: "#c79a3a", jackpot: true
+    }
+  ];
+
+  // Układ segmentów: każdy zwykły los ×2, JACKPOT tylko ×1 (czyli rzadszy)
+  var LAYOUT = [];
+  OUTCOMES.forEach(function (o, i) { LAYOUT.push(i); });                 // każdy los po razie
+  OUTCOMES.forEach(function (o, i) { if (!o.jackpot) LAYOUT.push(i); }); // zwykłe losy drugi raz
+  var SEGMENTS = LAYOUT.length;     // 9 segmentów: 4 losy ×2 + JACKPOT ×1
+  var ANGLE = 360 / SEGMENTS;       // 40° na segment
+  var CX = 200, CY = 200, R = 196;
+
+  var wheel = document.getElementById("wheel");
+  var hub = document.getElementById("hub");
+  var spinBtn = document.getElementById("spinBtn");
+  var result = document.getElementById("result");
+  var rEmoji = document.getElementById("rEmoji");
+  var rTitle = document.getElementById("rTitle");
+  var rDesc = document.getElementById("rDesc");
+  var historyEl = document.getElementById("history");
+  var counterEl = document.getElementById("counter");
+
+  // --- Pomocnicze: punkt na okręgu, kąt liczony zgodnie z ruchem wskazówek od GÓRY ---
+  function pt(deg, radius) {
+    var rad = (deg - 90) * Math.PI / 180;
+    return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
+  }
+
+  // --- Budowa segmentów koła ---
+  function buildWheel() {
+    var svg = "";
+    for (var k = 0; k < SEGMENTS; k++) {
+      var o = OUTCOMES[LAYOUT[k]];
+      var start = k * ANGLE;
+      var end = (k + 1) * ANGLE;
+      var p1 = pt(start, R);
+      var p2 = pt(end, R);
+      var largeArc = ANGLE > 180 ? 1 : 0;
+      var fill = o.color;
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 ' + largeArc + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + fill + '" stroke="rgba(0,0,0,0.18)" stroke-width="1.5"/>';
+
+      // Emoji – zawsze pionowo, blisko obręczy
+      var mid = start + ANGLE / 2;
+      var ep = pt(mid, 158);
+      svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="27">' + o.emoji + '</text>';
+
+      // Etykieta – radialnie wzdłuż promienia; lewa połowa obrócona, by tekst był „do góry"
+      var flip = mid >= 180;
+      var rLabel = 112;
+      var lr = flip ? 90 : -90;
+      var labelFill = o.jackpot ? "#2a1b10" : "#fff";
+      svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" fill="' + labelFill + '" font-family="Inter, sans-serif">' + o.label + '</text>' +
+             '</g>';
+    }
+    // Subtelny wewnętrzny pierścień
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // --- Logika kręcenia ---
+  var spinning = false;
+  var currentRotation = 0;
+  var spinCount = 0;
+  var jackpotCount = 0;
+  var historyLog = [];
+
+  function setDisabled(d) {
+    hub.disabled = d;
+    spinBtn.disabled = d;
+    hub.textContent = d ? "..." : "KRĘĆ";
+  }
+
+  function spin() {
+    if (spinning) return;
+    spinning = true;
+    setDisabled(true);
+    result.classList.remove("show", "jackpot");
+
+    var k = Math.floor(Math.random() * SEGMENTS);
+    var outcome = OUTCOMES[LAYOUT[k]];
+
+    var segCenter = k * ANGLE + ANGLE / 2;                 // kąt środka segmentu (od góry, zgodnie z zegarem)
+    var jitter = (Math.random() - 0.5) * (ANGLE * 0.62);   // żeby nie lądowało zawsze idealnie w środku
+    var targetMod = ((360 - (segCenter + jitter)) % 360 + 360) % 360;
+
+    var currentMod = ((currentRotation % 360) + 360) % 360;
+    var delta = ((targetMod - currentMod) % 360 + 360) % 360;
+    var spins = 5 + Math.floor(Math.random() * 2);         // 5–6 pełnych obrotów
+
+    currentRotation += spins * 360 + delta;
+    wheel.style.transform = "rotate(" + currentRotation + "deg)";
+
+    // fallback gdyby transitionend nie odpalił
+    var done = false;
+    function reveal() {
+      if (done) return;
+      done = true;
+      spinning = false;
+      setDisabled(false);
+      showResult(outcome);
+    }
+    wheel.addEventListener("transitionend", reveal, { once: true });
+    setTimeout(reveal, 6800);
+  }
+
+  function showResult(o) {
+    rEmoji.textContent = o.emoji;
+    rTitle.textContent = o.title;
+    rDesc.textContent = o.desc;
+    result.classList.toggle("jackpot", !!o.jackpot);
+    // restart animacji wejścia
+    void result.offsetWidth;
+    result.classList.add("show");
+
+    spinCount++;
+    if (o.jackpot) { jackpotCount++; fireConfetti(); }
+
+    historyLog.unshift(o.emoji);
+    if (historyLog.length > 12) historyLog.pop();
+    historyEl.innerHTML = "Dotychczasowe losy: <b>" + historyLog.join(" ") + "</b>";
+    counterEl.textContent = "Zakręcono " + spinCount + " × · JACKPOT-ów: " + jackpotCount;
+  }
+
+  hub.addEventListener("click", spin);
+  spinBtn.addEventListener("click", spin);
+
+  // --- Confetti (canvas) na JACKPOT ---
+  var canvas = document.getElementById("confetti");
+  var ctx = canvas.getContext("2d");
+  var pieces = [];
+  var rafId = null;
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  function fireConfetti() {
+    var colors = ["#e7c46c", "#fff6dc", "#d98a3d", "#b5454a", "#3f6f8f", "#ffffff"];
+    var emojis = ["🎉", "🍽️", "🍷", "✨", "🥂"];
+    for (var i = 0; i < 140; i++) {
+      pieces.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+        y: canvas.height / 3,
+        vx: (Math.random() - 0.5) * 14,
+        vy: Math.random() * -16 - 4,
+        g: 0.35 + Math.random() * 0.2,
+        size: 6 + Math.random() * 8,
+        rot: Math.random() * 360,
+        vr: (Math.random() - 0.5) * 20,
+        color: colors[(Math.random() * colors.length) | 0],
+        emoji: Math.random() < 0.22 ? emojis[(Math.random() * emojis.length) | 0] : null,
+        life: 0
+      });
+    }
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = pieces.length - 1; i >= 0; i--) {
+      var p = pieces[i];
+      p.vy += p.g;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.99;
+      p.rot += p.vr;
+      p.life++;
+      if (p.y > canvas.height + 40 || p.life > 260) { pieces.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      if (p.emoji) {
+        ctx.font = (p.size * 2.4) + "px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(p.emoji, 0, 0);
+      } else {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      }
+      ctx.restore();
+    }
+    if (pieces.length > 0) {
+      rafId = requestAnimationFrame(tick);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      rafId = null;
+    }
+  }
+
+  // Skrót klawiszowy: spacja / enter
+  document.addEventListener("keydown", function (e) {
+    if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
+      e.preventDefault();
+      spin();
+    }
+  });
+
+  buildWheel();
+})();
+</script>
+</body>
+</html>
