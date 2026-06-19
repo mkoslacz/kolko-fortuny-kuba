@@ -25,8 +25,12 @@ the rarest (≈ 11% chance; the others ≈ 22% each).
 ## 🌴 Second version — Travelminit (Roata vacanțelor)
 
 A rebranded variant for the Travelminit guerilla campaign *"Travelminit, du-mă oriunde cu 9 RON"*:
-brand colors (orange `#f8980d` / purple `#71246b` / white), Romanian copy, a **10-slot** wheel
-(8 prize slots that link to offers + 2 "Try again"), unlimited spins, and confetti on a win.
+brand colors (orange `#f8980d` / purple `#71246b` / white), Romanian copy, a **10-slot** wheel,
+unlimited spins, and confetti on a win. Three slot types (color-coded):
+
+- 🟠 **Big prize** — links to the offer (e.g. a 9 RON stay); CTA *"Rezervă acum"*.
+- 🟣 **Coupon** — shows a **copyable discount code** + link; CTA *"Folosește cuponul"*.
+- ⚪ **Try again** — no link.
 
 - **Public wheel:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html
 - **Prize editor:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html?edit

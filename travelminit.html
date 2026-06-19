@@ -18,9 +18,10 @@
   ┌──────────────────────────────────────────────────────────────────────┐
   │  EDITOR: add ?edit to the URL to open the prize editor.                │
   │  e.g.  https://.../travelminit.html?edit                               │
-  │  There you can change all texts, the 8 prizes (with links) and the     │
-  │  2 "Try again" slots, then click "Copy link" and paste that link on    │
-  │  the static page. The whole configuration travels inside the link.     │
+  │  3 slot types: "premiu mare" (big prize + link), "cupon" (coupon code  │
+  │  shown to the user + link), "try again" (no link). Edit, click          │
+  │  "Aplică pe roată", then "Copiază linkul" and paste it on the static    │
+  │  page. The whole configuration travels inside the link's #cfg= hash.    │
   └──────────────────────────────────────────────────────────────────────┘
 -->
 
@@ -188,7 +189,7 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.4);
   }
   .result.show { opacity: 1; transform: translateY(0) scale(1); }
-  .result.prize {
+  .result.win {
     border-color: var(--orange);
     box-shadow: 0 0 0 1px var(--orange), 0 20px 60px rgba(248,152,13,0.35);
   }
@@ -200,7 +201,30 @@
     margin: 8px 0 8px;
     color: #fff;
   }
-  .result .r-desc { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 16px; }
+  .result .r-desc { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 14px; }
+
+  /* Coupon code chip */
+  .coupon-box {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 0 16px;
+  }
+  .coupon-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .coupon-code {
+    font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.12em;
+    color: #fff; background: rgba(248,152,13,0.16);
+    border: 1.5px dashed var(--orange); padding: 7px 16px; border-radius: 10px;
+  }
+  .coupon-copy {
+    font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px; padding: 7px 14px;
+  }
+  .coupon-copy:hover { background: rgba(255,255,255,0.2); }
+
   .cta {
     display: none;
     text-decoration: none;
@@ -214,7 +238,7 @@
     box-shadow: 0 8px 20px rgba(248,152,13,0.42);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
-  .result.prize .cta { display: inline-block; }
+  .result.win .cta { display: inline-block; }
   .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(248,152,13,0.55); }
 
   footer {
@@ -254,8 +278,9 @@
   .editor legend { padding: 0 8px; font-family:'Poppins',sans-serif; font-weight: 700; font-size: 14px; }
   .editor legend .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
   .tag.prize { background: var(--orange); color: #43130f; }
+  .tag.coupon { background: var(--purple); color: #fff; }
   .tag.tryagain { background: #fff; color: var(--purple); }
-  .row2 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; }
+  .row2 { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
   .editor .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
   .btn {
     font-family:'Poppins',sans-serif; font-weight: 800; font-size: 14px;
@@ -284,7 +309,12 @@
   <div class="result" id="result" role="status" aria-live="polite">
     <div class="emoji" id="rEmoji">🎁</div>
     <div class="r-title" id="rTitle">Premiul tău te așteaptă...</div>
-    <p class="r-desc" id="rDesc">Apasă „Învârte roata", ține-ți norocul aproape și pornește în vacanță!</p>
+    <p class="r-desc" id="rDesc">Apasă «Învârte roata» și pornește în vacanță!</p>
+    <div class="coupon-box" id="rCoupon">
+      <span class="coupon-label">Cod cupon:</span>
+      <span class="coupon-code" id="rCouponCode"></span>
+      <button class="coupon-copy" id="rCouponCopy" type="button">Copiază</button>
+    </div>
     <a class="cta" id="rCta" target="_blank" rel="noopener">Rezervă acum →</a>
   </div>
 
@@ -297,6 +327,7 @@
       Schimbă textele și premiile, apasă <b>„Aplică pe roată"</b> ca să previzualizezi, apoi
       <b>„Copiază linkul"</b> și pune linkul pe pagina statică. Toată configurarea e salvată în link —
       în fiecare zi editezi, copiezi linkul nou și îl actualizezi pe pagină.
+      Tipuri de slot: <b>premiu mare</b> (link), <b>cupon</b> (cod afișat + link), <b>try again</b> (fără link).
     </p>
     <div id="editorFields"></div>
     <div class="actions">
@@ -321,22 +352,24 @@
       body: "Te-ai săturat și ai pleca oriunde într-o vacanță? Tot ceea ce ai nevoie sunt 9 RON și un pic de noroc!\nÎn perioada 24 - 26 iunie 2026, zilnic la ora 12:00, roata se resetează cu noi premii, printre care și 3 vacanțe la 9 RON!\nÎnvârte roata și rezervă-ți premiul rapid! Mult noroc, călătorule!",
       spinButton: "Învârte roata",
       hub: "Învârte",
-      cta: "Rezervă acum →",
+      ctaPrize: "Rezervă acum →",
+      ctaCoupon: "Folosește cuponul →",
       tryAgainTitle: "Mai încearcă!",
       tryAgainDesc: "Norocul e pe aproape — învârte roata din nou și prinde-ți vacanța!"
     },
-    // 10 slots: 8 prizes (with link) + 2 "try again". Order = order on the wheel.
+    // 10 slots. type: "prize" (big prize + link) | "coupon" (code + link) | "tryagain" (no link).
+    // Colors are by type: prize = orange, coupon = purple, tryagain = white.
     slots: [
-      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
-      { type: "prize", icon: "🏷️", label: "-50%", title: "Reducere 50%", desc: "50% reducere la o cazare selectată pe Travelminit.", url: "https://travelminit.ro" },
-      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", url: "" },
-      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
-      { type: "prize", icon: "🎟️", label: "-30%", title: "Cupon -30%", desc: "Cupon de 30% reducere la următoarea ta rezervare.", url: "https://travelminit.ro" },
-      { type: "prize", icon: "🎁", label: "Noapte cadou", title: "O noapte cadou", desc: "O noapte gratuită la cazări participante.", url: "https://travelminit.ro" },
-      { type: "prize", icon: "🏷️", label: "-20%", title: "Voucher -20%", desc: "Voucher de 20% reducere, valabil în perioada campaniei.", url: "https://travelminit.ro" },
-      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", url: "" },
-      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
-      { type: "prize", icon: "💸", label: "-15%", title: "Cod -15%", desc: "Cod de 15% reducere la cazarea aleasă de tine.", url: "https://travelminit.ro" }
+      { type: "coupon", icon: "🎟️", label: "-50%", title: "Reducere 50%!", desc: "Felicitări! Ai deblocat 50% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA50", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" },
+      { type: "coupon", icon: "🎟️", label: "-30%", title: "Reducere 30%!", desc: "Felicitări! Ai deblocat 30% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA30", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", coupon: "", url: "" },
+      { type: "coupon", icon: "🎟️", label: "-20%", title: "Reducere 20%!", desc: "Felicitări! Ai deblocat 20% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA20", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" },
+      { type: "coupon", icon: "🎟️", label: "-15%", title: "Reducere 15%!", desc: "Felicitări! Ai deblocat 15% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA15", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", coupon: "", url: "" },
+      { type: "coupon", icon: "🎁", label: "Noapte cadou", title: "O noapte cadou!", desc: "Felicitări! Ai deblocat o noapte cadou. Folosește codul de mai jos pe Travelminit:", coupon: "NOAPTE", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" }
     ]
   };
 
@@ -350,7 +383,6 @@
       if (!m) return null;
       var obj = JSON.parse(b64decode(decodeURIComponent(m[1])));
       if (!obj || !obj.slots || !obj.slots.length) return null;
-      // fill any missing text with defaults
       var t = obj.texts || {};
       Object.keys(DEFAULT_CONFIG.texts).forEach(function (k) {
         if (t[k] === undefined || t[k] === null) t[k] = DEFAULT_CONFIG.texts[k];
@@ -372,9 +404,22 @@
     var rad = (deg - 90) * Math.PI / 180;
     return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
   }
-
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function copyText(text) {
+    var ok = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { navigator.clipboard.writeText(text); ok = true; } catch (e) {}
+    }
+    if (!ok) {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    return ok;
   }
 
   var ORANGE = "#f8980d", PURPLE = "#71246b", WHITE = "#ffffff";
@@ -387,6 +432,9 @@
   var rEmoji = document.getElementById("rEmoji");
   var rTitle = document.getElementById("rTitle");
   var rDesc = document.getElementById("rDesc");
+  var rCoupon = document.getElementById("rCoupon");
+  var rCouponCode = document.getElementById("rCouponCode");
+  var rCouponCopy = document.getElementById("rCouponCopy");
   var rCta = document.getElementById("rCta");
 
   function applyTexts(cfg) {
@@ -405,28 +453,26 @@
     document.title = "🎡 " + cfg.texts.topline + " — Travelminit";
   }
 
+  function colorFor(type) {
+    if (type === "tryagain") return { fill: WHITE, text: PURPLE };
+    if (type === "coupon") return { fill: PURPLE, text: "#ffffff" };
+    return { fill: ORANGE, text: "#43130f" }; // prize
+  }
+
   // ---------- Build the wheel ----------
   function buildWheel(cfg) {
     SEGMENTS = cfg.slots.length;
     ANGLE = 360 / SEGMENTS;
     var svg = "";
-    var prizeIdx = 0;
     for (var k = 0; k < SEGMENTS; k++) {
       var s = cfg.slots[k];
-      var fill, textFill;
-      if (s.type === "tryagain") {
-        fill = WHITE; textFill = PURPLE;
-      } else {
-        fill = (prizeIdx % 2 === 0) ? ORANGE : PURPLE;
-        textFill = (fill === ORANGE) ? "#43130f" : "#ffffff";
-        prizeIdx++;
-      }
+      var col = colorFor(s.type);
       var start = k * ANGLE, end = (k + 1) * ANGLE;
       var p1 = pt(start, R), p2 = pt(end, R);
       var largeArc = ANGLE > 180 ? 1 : 0;
       svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
              ' A' + R + ' ' + R + ' 0 ' + largeArc + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
-             ' Z" fill="' + fill + '" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+             ' Z" fill="' + col.fill + '" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
 
       var mid = start + ANGLE / 2;
       if (s.icon) {
@@ -437,7 +483,7 @@
       var rLabel = 108;
       var lr = flip ? 90 : -90;
       svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
-               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" fill="' + textFill + '" font-family="Inter, sans-serif">' + esc(s.label) + '</text>' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(s.label) + '</text>' +
              '</g>';
     }
     svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
@@ -457,7 +503,7 @@
     if (spinning) return;
     spinning = true;
     setDisabled(true);
-    result.classList.remove("show", "prize");
+    result.classList.remove("show", "win");
 
     var k = Math.floor(Math.random() * SEGMENTS);
     var slot = config.slots[k];
@@ -485,40 +531,59 @@
   }
 
   function showResult(s) {
-    var isPrize = s.type !== "tryagain";
-    rEmoji.textContent = s.icon || (isPrize ? "🎁" : "🔄");
-    if (isPrize) {
+    var type = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
+    var isWin = type !== "tryagain";
+
+    rEmoji.textContent = s.icon || (type === "tryagain" ? "🔄" : type === "coupon" ? "🎟️" : "🎁");
+
+    if (type === "tryagain") {
+      rTitle.textContent = config.texts.tryAgainTitle;
+      rDesc.textContent = config.texts.tryAgainDesc;
+      rCoupon.style.display = "none";
+      rCta.removeAttribute("href");
+    } else {
       rTitle.textContent = s.title || s.label;
       rDesc.textContent = s.desc || "";
+      if (type === "coupon" && s.coupon) {
+        rCouponCode.textContent = s.coupon;
+        rCoupon.style.display = "flex";
+      } else {
+        rCoupon.style.display = "none";
+      }
       if (s.url) {
-        rCta.textContent = config.texts.cta;
+        rCta.textContent = (type === "coupon") ? config.texts.ctaCoupon : config.texts.ctaPrize;
         rCta.setAttribute("href", s.url);
       } else {
         rCta.removeAttribute("href");
       }
-    } else {
-      rTitle.textContent = config.texts.tryAgainTitle;
-      rDesc.textContent = config.texts.tryAgainDesc;
-      rCta.removeAttribute("href");
     }
-    result.classList.toggle("prize", isPrize && !!s.url);
 
+    result.classList.toggle("win", isWin && !!s.url);
     void result.offsetWidth;
     result.classList.add("show");
     requestAnimationFrame(function () {
       result.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
-    if (isPrize) fireConfetti();
+    if (isWin) fireConfetti();
   }
 
   hub.addEventListener("click", spin);
   spinBtn.addEventListener("click", spin);
-  // whole card clickable for prizes
+
+  rCouponCopy.addEventListener("click", function (e) {
+    e.stopPropagation();
+    copyText(rCouponCode.textContent);
+    var orig = rCouponCopy.textContent;
+    rCouponCopy.textContent = "Copiat ✓";
+    setTimeout(function () { rCouponCopy.textContent = orig; }, 1600);
+  });
+
+  // whole card clickable for wins (except the copy button / the CTA itself)
   result.addEventListener("click", function (e) {
-    if (e.target === rCta) return;
+    if (e.target === rCta || e.target === rCouponCopy) return;
     var href = rCta.getAttribute("href");
-    if (result.classList.contains("prize") && href) window.open(href, "_blank", "noopener");
+    if (result.classList.contains("win") && href) window.open(href, "_blank", "noopener");
   });
 
   document.addEventListener("keydown", function (e) {
@@ -566,6 +631,11 @@
   }
 
   // ---------- Editor (?edit) ----------
+  function field(label, id, val) { return '<label>' + esc(label) + '</label><input id="' + id + '" value="' + attr(val) + '" />'; }
+  function area(label, id, val) { return '<label>' + esc(label) + '</label><textarea id="' + id + '">' + esc(val || "") + '</textarea>'; }
+  function attr(v) { return esc(v == null ? "" : v).replace(/"/g, "&quot;"); }
+  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
+
   function buildEditor() {
     var wrap = document.getElementById("editorFields");
     var t = config.texts;
@@ -574,31 +644,31 @@
     html += field("Titlu (headline)", "t_headline", t.headline);
     html += area("Text (paragrafe pe linii separate)", "t_body", t.body);
     html += '<div class="row2">' + field("Buton", "t_spinButton", t.spinButton) + field("Centru", "t_hub", t.hub) + '</div>';
-    html += '<div class="row2">' + field("Buton rezultat (CTA)", "t_cta", t.cta) + field("Titlu „Mai încearcă\"", "t_taTitle", t.tryAgainTitle) + '</div>';
-    html += area("Descriere „Mai încearcă\"", "t_taDesc", t.tryAgainDesc);
+    html += '<div class="row2">' + field("Buton «premiu mare»", "t_ctaPrize", t.ctaPrize) + field("Buton «cupon»", "t_ctaCoupon", t.ctaCoupon) + '</div>';
+    html += field("Titlu «Mai încearcă»", "t_taTitle", t.tryAgainTitle);
+    html += area("Descriere «Mai încearcă»", "t_taDesc", t.tryAgainDesc);
 
     config.slots.forEach(function (s, i) {
-      var tag = s.type === "tryagain" ? '<span class="tag tryagain">try again</span>' : '<span class="tag prize">premiu</span>';
-      html += '<fieldset><legend>Slot ' + (i + 1) + ' ' + tag + '</legend>';
+      var typ = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
+      var tagText = typ === "tryagain" ? "try again" : (typ === "coupon" ? "cupon" : "premiu mare");
+      html += '<fieldset><legend>Slot ' + (i + 1) + ' <span class="tag ' + typ + '">' + tagText + '</span></legend>';
       html += '<div class="row2">';
       html += '<div><label>Tip</label><select id="s_type_' + i + '">' +
-                '<option value="prize"' + (s.type !== "tryagain" ? " selected" : "") + '>premiu</option>' +
-                '<option value="tryagain"' + (s.type === "tryagain" ? " selected" : "") + '>try again</option>' +
+                '<option value="prize"' + (typ === "prize" ? " selected" : "") + '>premiu mare</option>' +
+                '<option value="coupon"' + (typ === "coupon" ? " selected" : "") + '>cupon</option>' +
+                '<option value="tryagain"' + (typ === "tryagain" ? " selected" : "") + '>try again</option>' +
               '</select></div>';
       html += '<div><label>Iconiță (emoji)</label><input id="s_icon_' + i + '" value="' + attr(s.icon) + '" /></div>';
       html += '</div>';
       html += field("Etichetă (pe roată)", "s_label_" + i, s.label);
       html += field("Titlu rezultat", "s_title_" + i, s.title);
       html += area("Descriere rezultat", "s_desc_" + i, s.desc);
+      html += field("Cod cupon (doar pentru tip „cupon\")", "s_coupon_" + i, s.coupon);
       html += field("Link (unde duce premiul)", "s_url_" + i, s.url);
       html += '</fieldset>';
     });
     wrap.innerHTML = html;
   }
-  function field(label, id, val) { return '<label>' + esc(label) + '</label><input id="' + id + '" value="' + attr(val) + '" />'; }
-  function area(label, id, val) { return '<label>' + esc(label) + '</label><textarea id="' + id + '">' + esc(val || "") + '</textarea>'; }
-  function attr(v) { return esc(v == null ? "" : v).replace(/"/g, "&quot;"); }
-  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
 
   function gatherConfig() {
     var c = { texts: {}, slots: [] };
@@ -607,7 +677,8 @@
     c.texts.body = val("t_body");
     c.texts.spinButton = val("t_spinButton");
     c.texts.hub = val("t_hub");
-    c.texts.cta = val("t_cta");
+    c.texts.ctaPrize = val("t_ctaPrize");
+    c.texts.ctaCoupon = val("t_ctaCoupon");
     c.texts.tryAgainTitle = val("t_taTitle");
     c.texts.tryAgainDesc = val("t_taDesc");
     for (var i = 0; i < config.slots.length; i++) {
@@ -617,6 +688,7 @@
         label: val("s_label_" + i),
         title: val("s_title_" + i),
         desc: val("s_desc_" + i),
+        coupon: val("s_coupon_" + i),
         url: val("s_url_" + i)
       });
     }
@@ -628,7 +700,7 @@
     buildEditor();
     document.getElementById("applyBtn").addEventListener("click", function () {
       config = gatherConfig();
-      applyTexts(config); buildWheel(config);
+      applyTexts(config); buildWheel(config); buildEditor();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
     document.getElementById("copyBtn").addEventListener("click", function () {
@@ -636,11 +708,8 @@
       applyTexts(config); buildWheel(config);
       var link = location.origin + location.pathname + "#cfg=" + b64encode(JSON.stringify(config));
       var out = document.getElementById("linkOut");
-      out.value = link;
-      out.select();
-      var ok = false;
-      try { ok = document.execCommand("copy"); } catch (e) {}
-      if (navigator.clipboard) { navigator.clipboard.writeText(link).then(function(){}, function(){}); ok = true; }
+      out.value = link; out.select();
+      var ok = copyText(link);
       var msg = document.getElementById("copiedMsg");
       if (ok) { msg.style.display = "inline"; setTimeout(function () { msg.style.display = "none"; }, 2000); }
     });
