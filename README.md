@@ -22,6 +22,22 @@ the rarest (≈ 11% chance; the others ≈ 22% each).
 
 (`https://mkoslacz.github.io/kolko-fortuny-kuba/` also works — it redirects to the above)
 
+## 🌴 Second version — Travelminit (Roata vacanțelor)
+
+A rebranded variant for the Travelminit guerilla campaign *"Travelminit, du-mă oriunde cu 9 RON"*:
+brand colors (orange `#f8980d` / purple `#71246b` / white), Romanian copy, a **10-slot** wheel
+(8 prize slots that link to offers + 2 "Try again"), unlimited spins, and confetti on a win.
+
+- **Public wheel:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html
+- **Prize editor:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html?edit
+
+### Editing the prizes (no code needed)
+
+Open the `?edit` URL, change the texts and the 10 slots (each prize has its own link), click
+**"Aplică pe roată"** to preview, then **"Copiază linkul"**. The whole configuration is encoded in
+that link's `#cfg=…` hash — just paste the link on the static page. No files to edit, works on any
+host. Daily routine: edit → copy link → update the link on the page.
+
 ## 🛠️ How it works
 
 A single self-contained [`index.html`](index.html) — SVG + vanilla JavaScript, zero dependencies.

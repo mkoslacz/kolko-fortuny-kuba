@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🎡 Travelminit — Roata vacanțelor</title>
+<meta name="description" content="Învârte roata vacanțelor Travelminit și câștigă cazări la 9 RON, cupoane și reduceri. Mult noroc, călătorule!" />
+<meta property="og:title" content="🎡 Travelminit — Roata vacanțelor" />
+<meta property="og:description" content="Învârte roata și rezervă-ți premiul: vacanțe la 9 RON, cupoane și reduceri." />
+<meta property="og:type" content="website" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+<!--
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  EDITOR: add ?edit to the URL to open the prize editor.                │
+  │  e.g.  https://.../travelminit.html?edit                               │
+  │  There you can change all texts, the 8 prizes (with links) and the     │
+  │  2 "Try again" slots, then click "Copy link" and paste that link on    │
+  │  the static page. The whole configuration travels inside the link.     │
+  └──────────────────────────────────────────────────────────────────────┘
+-->
+
+<style>
+  :root {
+    --orange: #f8980d;
+    --orange-soft: #ffbe5c;
+    --purple: #71246b;
+    --purple-deep: #4a1745;
+    --bg-0: #2a0e29;
+    --bg-1: #5a1c55;
+    --ink: #ffffff;
+    --muted: #e7d4e4;
+    --card: rgba(40, 14, 39, 0.78);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 600px at 50% -8%, #7e2a77 0%, transparent 60%),
+      radial-gradient(900px 500px at 85% 115%, #8a2d2d00 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-0), var(--bg-1));
+    background-color: var(--bg-0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    overflow-x: hidden;
+  }
+  .topline {
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--orange);
+    margin: 2px 0 8px;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(24px, 5.2vw, 44px);
+    line-height: 1.08;
+    margin: 0 0 12px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(248, 152, 13, 0.25);
+    max-width: 760px;
+  }
+  .body-copy {
+    color: var(--muted);
+    font-size: clamp(13px, 2.2vw, 16px);
+    line-height: 1.55;
+    text-align: center;
+    margin: 0 0 22px;
+    max-width: 640px;
+  }
+  .body-copy p { margin: 0 0 8px; }
+  .body-copy p:last-child { margin-bottom: 0; }
+  .body-copy b { color: #fff; }
+
+  .stage {
+    position: relative;
+    width: min(88vw, 470px);
+    aspect-ratio: 1 / 1;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.5));
+  }
+  .pointer {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    z-index: 5;
+    border-left: 19px solid transparent;
+    border-right: 19px solid transparent;
+    border-top: 34px solid var(--orange);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  }
+  .pointer::after {
+    content: "";
+    position: absolute;
+    top: -42px; left: -8px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 4px rgba(248, 152, 13, 0.25);
+  }
+  .wheel-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d);
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.22), 0 0 0 2px rgba(255,255,255,0.07);
+  }
+  .wheel {
+    position: absolute;
+    inset: 12px;
+    z-index: 2;
+    border-radius: 50%;
+    transform: rotate(0deg);
+    transition: transform 6s cubic-bezier(0.12, 0.62, 0.06, 1);
+    will-change: transform;
+    display: block;
+  }
+  .wheel text { user-select: none; pointer-events: none; }
+
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22%; height: 22%;
+    border-radius: 50%;
+    z-index: 6;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(12px, 3vw, 18px);
+    letter-spacing: 0.02em;
+    background: radial-gradient(circle at 35% 30%, #ffbe5c, var(--orange) 48%, #c8780a 100%);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 8px rgba(0,0,0,0.25), inset 0 3px 8px rgba(255,255,255,0.45);
+    transition: transform 0.12s ease;
+  }
+  .hub:hover { transform: translate(-50%, -50%) scale(1.05); }
+  .hub:active { transform: translate(-50%, -50%) scale(0.96); }
+  .hub:disabled { cursor: not-allowed; filter: saturate(0.7) brightness(0.92); }
+
+  .spin-btn {
+    margin-top: 18px;
+    padding: 15px 42px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.06em;
+    color: #43130f;
+    background: linear-gradient(180deg, #ffce86, var(--orange) 45%, #d9830a);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(248, 152, 13, 0.4), inset 0 -3px 6px rgba(0,0,0,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s;
+  }
+  .spin-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(248,152,13,0.5); }
+  .spin-btn:active { transform: translateY(0); }
+  .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .result {
+    margin-top: 26px;
+    width: min(92vw, 540px);
+    background: var(--card);
+    border: 1px solid rgba(248, 152, 13, 0.35);
+    border-radius: 20px;
+    padding: 22px 24px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .result.show { opacity: 1; transform: translateY(0) scale(1); }
+  .result.prize {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 1px var(--orange), 0 20px 60px rgba(248,152,13,0.35);
+  }
+  .result .emoji { font-size: 52px; line-height: 1; }
+  .result .r-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(21px, 4.6vw, 29px);
+    margin: 8px 0 8px;
+    color: #fff;
+  }
+  .result .r-desc { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 16px; }
+  .cta {
+    display: none;
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #43130f;
+    background: linear-gradient(180deg, #ffce86, var(--orange) 45%, #d9830a);
+    padding: 13px 30px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(248,152,13,0.42);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .result.prize .cta { display: inline-block; }
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(248,152,13,0.55); }
+
+  footer {
+    margin-top: 30px;
+    color: rgba(231,212,228,0.5);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  /* ---------- Editor (visible only with ?edit) ---------- */
+  .editor {
+    display: none;
+    width: min(94vw, 720px);
+    margin-top: 30px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(248,152,13,0.35);
+    border-radius: 16px;
+    padding: 18px 18px 22px;
+    text-align: left;
+  }
+  body.edit .editor { display: block; }
+  .editor h2 { font-family:'Poppins',sans-serif; font-size: 18px; margin: 0 0 4px; color: var(--orange); }
+  .editor .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
+  .editor label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
+  .editor input, .editor textarea, .editor select {
+    width: 100%; padding: 9px 11px; border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.28); color: #fff; font: inherit; font-size: 14px;
+  }
+  .editor textarea { min-height: 64px; resize: vertical; }
+  .editor fieldset {
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
+    padding: 8px 14px 14px; margin: 12px 0;
+  }
+  .editor legend { padding: 0 8px; font-family:'Poppins',sans-serif; font-weight: 700; font-size: 14px; }
+  .editor legend .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+  .tag.prize { background: var(--orange); color: #43130f; }
+  .tag.tryagain { background: #fff; color: var(--purple); }
+  .row2 { display: grid; grid-template-columns: 90px 1fr; gap: 10px; }
+  .editor .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .btn {
+    font-family:'Poppins',sans-serif; font-weight: 800; font-size: 14px;
+    border: none; border-radius: 999px; padding: 11px 20px; cursor: pointer;
+  }
+  .btn-primary { background: linear-gradient(180deg,#ffce86,var(--orange) 45%,#d9830a); color:#43130f; }
+  .btn-ghost { background: rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.22); }
+  .linkout { width:100%; margin-top:12px; font-size:12px; }
+  .copied { color: #7ee08a; font-size: 13px; font-weight: 700; margin-left: 6px; }
+</style>
+</head>
+<body>
+  <div class="topline" id="topline">Roata vacanțelor</div>
+  <h1 id="headline">Travelminit, du-mă oriunde cu 9 RON!</h1>
+  <div class="body-copy" id="bodyCopy"></div>
+
+  <div class="stage">
+    <div class="pointer"></div>
+    <div class="wheel-ring"></div>
+    <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Roata vacanțelor"></svg>
+    <button class="hub" id="hub" aria-label="Învârte roata">Învârte</button>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">Învârte roata</button>
+
+  <div class="result" id="result" role="status" aria-live="polite">
+    <div class="emoji" id="rEmoji">🎁</div>
+    <div class="r-title" id="rTitle">Premiul tău te așteaptă...</div>
+    <p class="r-desc" id="rDesc">Apasă „Învârte roata", ține-ți norocul aproape și pornește în vacanță!</p>
+    <a class="cta" id="rCta" target="_blank" rel="noopener">Rezervă acum →</a>
+  </div>
+
+  <footer>Travelminit · Roata vacanțelor 🎡</footer>
+
+  <!-- Editor (only when ?edit is in the URL) -->
+  <section class="editor" id="editor">
+    <h2>✎ Editor premii</h2>
+    <p class="hint">
+      Schimbă textele și premiile, apasă <b>„Aplică pe roată"</b> ca să previzualizezi, apoi
+      <b>„Copiază linkul"</b> și pune linkul pe pagina statică. Toată configurarea e salvată în link —
+      în fiecare zi editezi, copiezi linkul nou și îl actualizezi pe pagină.
+    </p>
+    <div id="editorFields"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="applyBtn">Aplică pe roată</button>
+      <button class="btn btn-primary" id="copyBtn">Copiază linkul <span class="copied" id="copiedMsg" style="display:none">copiat ✓</span></button>
+      <button class="btn btn-ghost" id="resetBtn">Resetează</button>
+    </div>
+    <input class="linkout" id="linkOut" readonly placeholder="linkul pentru pagina statică va apărea aici" />
+  </section>
+
+  <canvas id="confetti"></canvas>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Default configuration (placeholders – the editor overrides these) ----------
+  var DEFAULT_CONFIG = {
+    texts: {
+      topline: "Roata vacanțelor",
+      headline: "Travelminit, du-mă oriunde cu 9 RON!",
+      body: "Te-ai săturat și ai pleca oriunde într-o vacanță? Tot ceea ce ai nevoie sunt 9 RON și un pic de noroc!\nÎn perioada 24 - 26 iunie 2026, zilnic la ora 12:00, roata se resetează cu noi premii, printre care și 3 vacanțe la 9 RON!\nÎnvârte roata și rezervă-ți premiul rapid! Mult noroc, călătorule!",
+      spinButton: "Învârte roata",
+      hub: "Învârte",
+      cta: "Rezervă acum →",
+      tryAgainTitle: "Mai încearcă!",
+      tryAgainDesc: "Norocul e pe aproape — învârte roata din nou și prinde-ți vacanța!"
+    },
+    // 10 slots: 8 prizes (with link) + 2 "try again". Order = order on the wheel.
+    slots: [
+      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
+      { type: "prize", icon: "🏷️", label: "-50%", title: "Reducere 50%", desc: "50% reducere la o cazare selectată pe Travelminit.", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", url: "" },
+      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
+      { type: "prize", icon: "🎟️", label: "-30%", title: "Cupon -30%", desc: "Cupon de 30% reducere la următoarea ta rezervare.", url: "https://travelminit.ro" },
+      { type: "prize", icon: "🎁", label: "Noapte cadou", title: "O noapte cadou", desc: "O noapte gratuită la cazări participante.", url: "https://travelminit.ro" },
+      { type: "prize", icon: "🏷️", label: "-20%", title: "Voucher -20%", desc: "Voucher de 20% reducere, valabil în perioada campaniei.", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", url: "" },
+      { type: "prize", icon: "🏖️", label: "Vacanță 9 RON", title: "Vacanță la 9 RON!", desc: "Cazare-surpriză la doar 9 RON. Rezervă rapid, locurile sunt limitate!", url: "https://travelminit.ro/9ron" },
+      { type: "prize", icon: "💸", label: "-15%", title: "Cod -15%", desc: "Cod de 15% reducere la cazarea aleasă de tine.", url: "https://travelminit.ro" }
+    ]
+  };
+
+  // ---------- Unicode-safe base64 (config travels inside the link) ----------
+  function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function b64decode(str) { return decodeURIComponent(escape(atob(str))); }
+
+  function readConfigFromHash() {
+    try {
+      var m = location.hash.match(/cfg=([^&]+)/);
+      if (!m) return null;
+      var obj = JSON.parse(b64decode(decodeURIComponent(m[1])));
+      if (!obj || !obj.slots || !obj.slots.length) return null;
+      // fill any missing text with defaults
+      var t = obj.texts || {};
+      Object.keys(DEFAULT_CONFIG.texts).forEach(function (k) {
+        if (t[k] === undefined || t[k] === null) t[k] = DEFAULT_CONFIG.texts[k];
+      });
+      obj.texts = t;
+      return obj;
+    } catch (e) { return null; }
+  }
+
+  function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+  var config = readConfigFromHash() || deepCopy(DEFAULT_CONFIG);
+
+  // ---------- Geometry ----------
+  var CX = 200, CY = 200, R = 196;
+  var SEGMENTS, ANGLE;
+
+  function pt(deg, radius) {
+    var rad = (deg - 90) * Math.PI / 180;
+    return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  var ORANGE = "#f8980d", PURPLE = "#71246b", WHITE = "#ffffff";
+
+  // ---------- DOM ----------
+  var wheel = document.getElementById("wheel");
+  var hub = document.getElementById("hub");
+  var spinBtn = document.getElementById("spinBtn");
+  var result = document.getElementById("result");
+  var rEmoji = document.getElementById("rEmoji");
+  var rTitle = document.getElementById("rTitle");
+  var rDesc = document.getElementById("rDesc");
+  var rCta = document.getElementById("rCta");
+
+  function applyTexts(cfg) {
+    document.getElementById("topline").textContent = cfg.texts.topline;
+    document.getElementById("headline").textContent = cfg.texts.headline;
+    var bc = document.getElementById("bodyCopy");
+    bc.innerHTML = "";
+    String(cfg.texts.body).split("\n").forEach(function (line) {
+      if (!line.trim()) return;
+      var p = document.createElement("p");
+      p.textContent = line;
+      bc.appendChild(p);
+    });
+    spinBtn.textContent = cfg.texts.spinButton;
+    hub.textContent = cfg.texts.hub;
+    document.title = "🎡 " + cfg.texts.topline + " — Travelminit";
+  }
+
+  // ---------- Build the wheel ----------
+  function buildWheel(cfg) {
+    SEGMENTS = cfg.slots.length;
+    ANGLE = 360 / SEGMENTS;
+    var svg = "";
+    var prizeIdx = 0;
+    for (var k = 0; k < SEGMENTS; k++) {
+      var s = cfg.slots[k];
+      var fill, textFill;
+      if (s.type === "tryagain") {
+        fill = WHITE; textFill = PURPLE;
+      } else {
+        fill = (prizeIdx % 2 === 0) ? ORANGE : PURPLE;
+        textFill = (fill === ORANGE) ? "#43130f" : "#ffffff";
+        prizeIdx++;
+      }
+      var start = k * ANGLE, end = (k + 1) * ANGLE;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      var largeArc = ANGLE > 180 ? 1 : 0;
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 ' + largeArc + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + fill + '" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+
+      var mid = start + ANGLE / 2;
+      if (s.icon) {
+        var ep = pt(mid, 156);
+        svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="24">' + esc(s.icon) + '</text>';
+      }
+      var flip = mid >= 180;
+      var rLabel = 108;
+      var lr = flip ? 90 : -90;
+      svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="800" fill="' + textFill + '" font-family="Inter, sans-serif">' + esc(s.label) + '</text>' +
+             '</g>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // ---------- Spin ----------
+  var spinning = false;
+  var currentRotation = 0;
+
+  function setDisabled(d) {
+    hub.disabled = d; spinBtn.disabled = d;
+    hub.textContent = d ? "..." : config.texts.hub;
+  }
+
+  function spin() {
+    if (spinning) return;
+    spinning = true;
+    setDisabled(true);
+    result.classList.remove("show", "prize");
+
+    var k = Math.floor(Math.random() * SEGMENTS);
+    var slot = config.slots[k];
+
+    var segCenter = k * ANGLE + ANGLE / 2;
+    var jitter = (Math.random() - 0.5) * (ANGLE * 0.6);
+    var targetMod = ((360 - (segCenter + jitter)) % 360 + 360) % 360;
+    var currentMod = ((currentRotation % 360) + 360) % 360;
+    var delta = ((targetMod - currentMod) % 360 + 360) % 360;
+    var spins = 5 + Math.floor(Math.random() * 2);
+
+    currentRotation += spins * 360 + delta;
+    wheel.style.transform = "rotate(" + currentRotation + "deg)";
+
+    var done = false;
+    function reveal() {
+      if (done) return;
+      done = true;
+      spinning = false;
+      setDisabled(false);
+      showResult(slot);
+    }
+    wheel.addEventListener("transitionend", reveal, { once: true });
+    setTimeout(reveal, 6800);
+  }
+
+  function showResult(s) {
+    var isPrize = s.type !== "tryagain";
+    rEmoji.textContent = s.icon || (isPrize ? "🎁" : "🔄");
+    if (isPrize) {
+      rTitle.textContent = s.title || s.label;
+      rDesc.textContent = s.desc || "";
+      if (s.url) {
+        rCta.textContent = config.texts.cta;
+        rCta.setAttribute("href", s.url);
+      } else {
+        rCta.removeAttribute("href");
+      }
+    } else {
+      rTitle.textContent = config.texts.tryAgainTitle;
+      rDesc.textContent = config.texts.tryAgainDesc;
+      rCta.removeAttribute("href");
+    }
+    result.classList.toggle("prize", isPrize && !!s.url);
+
+    void result.offsetWidth;
+    result.classList.add("show");
+    requestAnimationFrame(function () {
+      result.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    if (isPrize) fireConfetti();
+  }
+
+  hub.addEventListener("click", spin);
+  spinBtn.addEventListener("click", spin);
+  // whole card clickable for prizes
+  result.addEventListener("click", function (e) {
+    if (e.target === rCta) return;
+    var href = rCta.getAttribute("href");
+    if (result.classList.contains("prize") && href) window.open(href, "_blank", "noopener");
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
+      e.preventDefault(); spin();
+    }
+  });
+
+  // ---------- Confetti ----------
+  var canvas = document.getElementById("confetti");
+  var ctx = canvas.getContext("2d");
+  var pieces = [], rafId = null;
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+  function fireConfetti() {
+    var colors = ["#f8980d", "#ffd89b", "#71246b", "#ffffff", "#b5559f"];
+    var emojis = ["🎉", "🏖️", "✈️", "🧳", "🥳"];
+    for (var i = 0; i < 130; i++) {
+      pieces.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 200, y: canvas.height / 3,
+        vx: (Math.random() - 0.5) * 14, vy: Math.random() * -16 - 4,
+        g: 0.35 + Math.random() * 0.2, size: 6 + Math.random() * 8,
+        rot: Math.random() * 360, vr: (Math.random() - 0.5) * 20,
+        color: colors[(Math.random() * colors.length) | 0],
+        emoji: Math.random() < 0.22 ? emojis[(Math.random() * emojis.length) | 0] : null,
+        life: 0
+      });
+    }
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = pieces.length - 1; i >= 0; i--) {
+      var p = pieces[i];
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.rot += p.vr; p.life++;
+      if (p.y > canvas.height + 40 || p.life > 260) { pieces.splice(i, 1); continue; }
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+      if (p.emoji) { ctx.font = (p.size * 2.4) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(p.emoji, 0, 0); }
+      else { ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6); }
+      ctx.restore();
+    }
+    if (pieces.length > 0) rafId = requestAnimationFrame(tick);
+    else { ctx.clearRect(0, 0, canvas.width, canvas.height); rafId = null; }
+  }
+
+  // ---------- Editor (?edit) ----------
+  function buildEditor() {
+    var wrap = document.getElementById("editorFields");
+    var t = config.texts;
+    var html = "";
+    html += field("Text mic (sus)", "t_topline", t.topline);
+    html += field("Titlu (headline)", "t_headline", t.headline);
+    html += area("Text (paragrafe pe linii separate)", "t_body", t.body);
+    html += '<div class="row2">' + field("Buton", "t_spinButton", t.spinButton) + field("Centru", "t_hub", t.hub) + '</div>';
+    html += '<div class="row2">' + field("Buton rezultat (CTA)", "t_cta", t.cta) + field("Titlu „Mai încearcă\"", "t_taTitle", t.tryAgainTitle) + '</div>';
+    html += area("Descriere „Mai încearcă\"", "t_taDesc", t.tryAgainDesc);
+
+    config.slots.forEach(function (s, i) {
+      var tag = s.type === "tryagain" ? '<span class="tag tryagain">try again</span>' : '<span class="tag prize">premiu</span>';
+      html += '<fieldset><legend>Slot ' + (i + 1) + ' ' + tag + '</legend>';
+      html += '<div class="row2">';
+      html += '<div><label>Tip</label><select id="s_type_' + i + '">' +
+                '<option value="prize"' + (s.type !== "tryagain" ? " selected" : "") + '>premiu</option>' +
+                '<option value="tryagain"' + (s.type === "tryagain" ? " selected" : "") + '>try again</option>' +
+              '</select></div>';
+      html += '<div><label>Iconiță (emoji)</label><input id="s_icon_' + i + '" value="' + attr(s.icon) + '" /></div>';
+      html += '</div>';
+      html += field("Etichetă (pe roată)", "s_label_" + i, s.label);
+      html += field("Titlu rezultat", "s_title_" + i, s.title);
+      html += area("Descriere rezultat", "s_desc_" + i, s.desc);
+      html += field("Link (unde duce premiul)", "s_url_" + i, s.url);
+      html += '</fieldset>';
+    });
+    wrap.innerHTML = html;
+  }
+  function field(label, id, val) { return '<label>' + esc(label) + '</label><input id="' + id + '" value="' + attr(val) + '" />'; }
+  function area(label, id, val) { return '<label>' + esc(label) + '</label><textarea id="' + id + '">' + esc(val || "") + '</textarea>'; }
+  function attr(v) { return esc(v == null ? "" : v).replace(/"/g, "&quot;"); }
+  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
+
+  function gatherConfig() {
+    var c = { texts: {}, slots: [] };
+    c.texts.topline = val("t_topline");
+    c.texts.headline = val("t_headline");
+    c.texts.body = val("t_body");
+    c.texts.spinButton = val("t_spinButton");
+    c.texts.hub = val("t_hub");
+    c.texts.cta = val("t_cta");
+    c.texts.tryAgainTitle = val("t_taTitle");
+    c.texts.tryAgainDesc = val("t_taDesc");
+    for (var i = 0; i < config.slots.length; i++) {
+      c.slots.push({
+        type: val("s_type_" + i),
+        icon: val("s_icon_" + i),
+        label: val("s_label_" + i),
+        title: val("s_title_" + i),
+        desc: val("s_desc_" + i),
+        url: val("s_url_" + i)
+      });
+    }
+    return c;
+  }
+
+  function initEditor() {
+    document.body.classList.add("edit");
+    buildEditor();
+    document.getElementById("applyBtn").addEventListener("click", function () {
+      config = gatherConfig();
+      applyTexts(config); buildWheel(config);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    document.getElementById("copyBtn").addEventListener("click", function () {
+      config = gatherConfig();
+      applyTexts(config); buildWheel(config);
+      var link = location.origin + location.pathname + "#cfg=" + b64encode(JSON.stringify(config));
+      var out = document.getElementById("linkOut");
+      out.value = link;
+      out.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      if (navigator.clipboard) { navigator.clipboard.writeText(link).then(function(){}, function(){}); ok = true; }
+      var msg = document.getElementById("copiedMsg");
+      if (ok) { msg.style.display = "inline"; setTimeout(function () { msg.style.display = "none"; }, 2000); }
+    });
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      config = deepCopy(DEFAULT_CONFIG);
+      applyTexts(config); buildWheel(config); buildEditor();
+      document.getElementById("linkOut").value = "";
+    });
+  }
+
+  // ---------- Init ----------
+  applyTexts(config);
+  buildWheel(config);
+  if (new URLSearchParams(location.search).has("edit")) {
+    initEditor();
+  }
+})();
+</script>
+</body>
+</html>
