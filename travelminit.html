@@ -90,9 +90,11 @@
     position: relative;
     width: min(88vw, 470px);
     max-width: 100%;
-    aspect-ratio: 1 / 1;
     margin: 0 auto 6px;
-    filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.5));
+    padding: 12px;                 /* the gold rim */
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d);
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.22), 0 0 0 2px rgba(255,255,255,0.07), 0 26px 54px rgba(0,0,0,0.5);
   }
   .pointer {
     position: absolute;
@@ -115,22 +117,17 @@
     background: var(--orange);
     box-shadow: 0 0 0 4px rgba(248, 152, 13, 0.25);
   }
-  .wheel-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d);
-    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.22), 0 0 0 2px rgba(255,255,255,0.07);
-  }
   .wheel {
-    position: absolute;
-    inset: 12px;
+    position: relative;
     z-index: 2;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;          /* on the SVG (not a flex item) — reliable in WebKit */
     border-radius: 50%;
     transform: rotate(0deg);
     transition: transform 6s cubic-bezier(0.12, 0.62, 0.06, 1);
     will-change: transform;
-    display: block;
   }
   .wheel text { user-select: none; pointer-events: none; }
 
@@ -319,7 +316,6 @@
 
   <div class="stage">
     <div class="pointer"></div>
-    <div class="wheel-ring"></div>
     <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Roata vacanțelor"></svg>
     <button class="hub" id="hub" aria-label="Învârte roata">Învârte</button>
   </div>
