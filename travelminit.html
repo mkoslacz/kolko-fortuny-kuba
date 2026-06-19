@@ -38,7 +38,7 @@
     --card: rgba(40, 14, 39, 0.78);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; overflow-x: hidden; max-width: 100%; }
   body {
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -89,8 +89,9 @@
   .stage {
     position: relative;
     width: min(88vw, 470px);
+    max-width: 100%;
     aspect-ratio: 1 / 1;
-    margin-bottom: 6px;
+    margin: 0 auto 6px;
     filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.5));
   }
   .pointer {
