@@ -35,12 +35,20 @@ unlimited spins, and confetti on a win. Three slot types (color-coded):
 - **Public wheel:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html
 - **Prize editor:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html?edit
 
-### Editing the prizes (no code needed)
+### Editing the prizes (no code)
 
-Open the `?edit` URL, change the texts and the 10 slots (each prize has its own link), click
-**"Aplică pe roată"** to preview, then **"Copiază linkul"**. The whole configuration is encoded in
-that link's `#cfg=…` hash — just paste the link on the static page. No files to edit, works on any
-host. Daily routine: edit → copy link → update the link on the page.
+Two ways:
+
+1. **Google Sheet (recommended for daily updates):** point the wheel at a published Google Sheet
+   (set `prizesUrl` / `textsUrl` near the top of `travelminit.html`). The wheel reads it **live**, so
+   editing the sheet updates the wheel — nothing else to touch, banner/embed link stays fixed.
+   Templates: [`travelminit-sheet-Premii.csv`](travelminit-sheet-Premii.csv) (prizes) and
+   [`travelminit-sheet-Texte.csv`](travelminit-sheet-Texte.csv) (texts) — import each into a tab named
+   `Premii` / `Texte`, then File → Share → Publish to web → CSV.
+2. **Built-in editor (`?edit`):** edit in a form, **"Aplică pe roată"** to preview, **"Copiază linkul"** —
+   the whole config is encoded in the link's `#cfg=…` hash. Good for a one-off or preview without a sheet.
+
+Offer links are sanitized to `http(s)` only; the layout is mobile-optimized.
 
 ## 🛠️ How it works
 

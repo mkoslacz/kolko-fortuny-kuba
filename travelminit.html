@@ -290,6 +290,20 @@
   .btn-ghost { background: rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.22); }
   .linkout { width:100%; margin-top:12px; font-size:12px; }
   .copied { color: #7ee08a; font-size: 13px; font-weight: 700; margin-left: 6px; }
+
+  /* ---------- Mobile: compact the header so the wheel + button fit ---------- */
+  @media (max-width: 480px) {
+    body { padding: 12px 14px 30px; }
+    .topline { letter-spacing: 0.22em; font-size: 11px; margin: 0 0 6px; }
+    h1 { font-size: clamp(21px, 6.4vw, 30px); margin: 0 0 8px; }
+    .body-copy { font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
+    .body-copy p { margin: 0 0 6px; }
+    .stage { width: min(82vw, 440px); }
+    .spin-btn { margin-top: 14px; padding: 13px 34px; font-size: 16px; }
+    .result { margin-top: 20px; padding: 20px 18px; }
+    .result .emoji { font-size: 46px; }
+    .coupon-code { font-size: 18px; padding: 6px 14px; }
+  }
 </style>
 </head>
 <body>
@@ -371,6 +385,20 @@
       { type: "coupon", icon: "🎁", label: "Noapte cadou", title: "O noapte cadou!", desc: "Felicitări! Ai deblocat o noapte cadou. Folosește codul de mai jos pe Travelminit:", coupon: "NOAPTE", url: "https://travelminit.ro" },
       { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" }
     ]
+  };
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  GOOGLE SHEET (one-time setup) — the wheel reads its prizes/texts LIVE
+  //  from a Google Sheet, so Larisa just edits the sheet and the wheel follows.
+  //  Paste the published-CSV links below. Leave "" to use DEFAULT_CONFIG above.
+  //  Get a link: Google Sheets → File → Share → Publish to web → choose the
+  //  tab → "Comma-separated values (.csv)" → Publish → copy the URL.
+  //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link)
+  //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional
+  // ───────────────────────────────────────────────────────────────────────
+  var SHEET = {
+    prizesUrl: "",
+    textsUrl: ""
   };
 
   // ---------- Unicode-safe base64 (config travels inside the link) ----------
@@ -720,11 +748,121 @@
     });
   }
 
+  // ---------- Google Sheet loading ----------
+  function fetchCSV(url) {
+    return fetch(url, { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    });
+  }
+  function parseCSV(text) {
+    var out = [];
+    String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").forEach(function (line) {
+      if (line === "") return;
+      var row = [], cur = "", inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var c = line.charAt(i);
+        if (inQ) {
+          if (c === '"') { if (line.charAt(i + 1) === '"') { cur += '"'; i++; } else inQ = false; }
+          else cur += c;
+        } else if (c === '"') inQ = true;
+        else if (c === ",") { row.push(cur); cur = ""; }
+        else cur += c;
+      }
+      row.push(cur);
+      out.push(row);
+    });
+    return out;
+  }
+  function norm(s) {
+    return String(s == null ? "" : s).trim().toLowerCase()
+      .replace(/[ăâ]/g, "a").replace(/î/g, "i").replace(/[șş]/g, "s").replace(/[țţ]/g, "t");
+  }
+  function colIndex(header, names) {
+    for (var i = 0; i < header.length; i++) {
+      var h = norm(header[i]).replace(/[^a-z0-9]/g, "");
+      for (var j = 0; j < names.length; j++) if (h === names[j]) return i;
+    }
+    return -1;
+  }
+  function mapType(v) {
+    var t = norm(v);
+    if (t.indexOf("cup") === 0 || t.indexOf("coup") === 0) return "coupon";
+    if (t.indexOf("try") === 0 || t.indexOf("incear") === 0 || t.indexOf("again") !== -1) return "tryagain";
+    return "prize";
+  }
+  function safeUrl(u) { u = String(u == null ? "" : u).trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+
+  function rowsToSlots(rows) {
+    if (!rows || rows.length < 2) return [];
+    var h = rows[0];
+    var ci = {
+      type: colIndex(h, ["tip", "type"]),
+      icon: colIndex(h, ["icon", "iconita", "emoji"]),
+      label: colIndex(h, ["eticheta", "label"]),
+      title: colIndex(h, ["titlu", "title"]),
+      desc: colIndex(h, ["descriere", "desc", "description"]),
+      coupon: colIndex(h, ["cod", "cupon", "coupon", "codcupon"]),
+      url: colIndex(h, ["link", "url"])
+    };
+    if (ci.type < 0 && ci.label < 0 && ci.url < 0) ci = { type: 0, icon: 1, label: 2, title: 3, desc: 4, coupon: 5, url: 6 };
+    function g(row, idx) { return idx >= 0 && idx < row.length ? String(row[idx]).trim() : ""; }
+    var slots = [];
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r];
+      var type = mapType(g(row, ci.type));
+      var label = g(row, ci.label), title = g(row, ci.title);
+      if (!label && !title && type !== "tryagain") continue;
+      slots.push({
+        type: type, icon: g(row, ci.icon), label: label, title: title,
+        desc: g(row, ci.desc), coupon: g(row, ci.coupon), url: safeUrl(g(row, ci.url))
+      });
+    }
+    return slots;
+  }
+  function applyTextsCSV(texts, rows) {
+    if (!rows || rows.length < 1) return;
+    var start = (rows[0] && (norm(rows[0][0]) === "cheie" || norm(rows[0][0]) === "key")) ? 1 : 0;
+    var map = {};
+    for (var r = start; r < rows.length; r++) {
+      var k = norm(rows[r][0]).replace(/[^a-z0-9]/g, "");
+      if (k) map[k] = rows[r][1] != null ? String(rows[r][1]) : "";
+    }
+    var keymap = {
+      topline: "topline", headline: "headline", buton: "spinButton", spinbutton: "spinButton",
+      centru: "hub", hub: "hub", ctapremiu: "ctaPrize", ctaprize: "ctaPrize",
+      ctacupon: "ctaCoupon", ctacoupon: "ctaCoupon", tryagaintitle: "tryAgainTitle",
+      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc"
+    };
+    Object.keys(map).forEach(function (k) { if (keymap[k] && map[k] !== "") texts[keymap[k]] = map[k]; });
+    var parts = [map.body1, map.body2, map.body3].filter(Boolean);
+    if (parts.length) texts.body = parts.join("\n");
+    else if (map.body) texts.body = map.body;
+  }
+  function loadFromSheet() {
+    var pPrizes = fetchCSV(SHEET.prizesUrl);
+    var pTexts = SHEET.textsUrl ? fetchCSV(SHEET.textsUrl).catch(function () { return null; }) : Promise.resolve(null);
+    return Promise.all([pPrizes, pTexts]).then(function (res) {
+      var cfg = deepCopy(DEFAULT_CONFIG);
+      var slots = rowsToSlots(parseCSV(res[0]));
+      if (slots.length >= 2) cfg.slots = slots;
+      if (res[1]) applyTextsCSV(cfg.texts, parseCSV(res[1]));
+      return cfg;
+    });
+  }
+
   // ---------- Init ----------
-  applyTexts(config);
-  buildWheel(config);
-  if (new URLSearchParams(location.search).has("edit")) {
+  var qp = new URLSearchParams(location.search);
+  if (qp.get("prizes")) SHEET.prizesUrl = qp.get("prizes");
+  if (qp.get("texts")) SHEET.textsUrl = qp.get("texts");
+
+  function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
+  render(config);
+
+  if (qp.has("edit")) {
     initEditor();
+  } else if (SHEET.prizesUrl) {
+    loadFromSheet().then(function (cfg) { config = cfg; render(cfg); }).catch(function () { /* keep defaults */ });
   }
 })();
 </script>
