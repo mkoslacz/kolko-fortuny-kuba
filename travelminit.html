@@ -291,6 +291,10 @@
   .linkout { width:100%; margin-top:12px; font-size:12px; }
   .copied { color: #7ee08a; font-size: 13px; font-weight: 700; margin-left: 6px; }
 
+  /* Wheel-only mode (?bare=1 or BARE=true): hide page text/footer, embed just the wheel as a box */
+  body.bare { padding-top: 14px; }
+  body.bare .topline, body.bare h1, body.bare .body-copy, body.bare footer { display: none; }
+
   /* ---------- Mobile: compact the header so the wheel + button fit ---------- */
   @media (max-width: 480px) {
     body { padding: 12px 14px 30px; }
@@ -400,6 +404,10 @@
     prizesUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=0&single=true&output=csv",
     textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv"
   };
+
+  // Show ONLY the wheel (hide the heading / body / footer) — use this when you build
+  // the rest of the page in Wix and embed just the wheel as a box. Also via ?bare=1.
+  var BARE = false;
 
   // ---------- Unicode-safe base64 (config travels inside the link) ----------
   function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
@@ -855,6 +863,7 @@
   var qp = new URLSearchParams(location.search);
   if (qp.get("prizes")) SHEET.prizesUrl = qp.get("prizes");
   if (qp.get("texts")) SHEET.textsUrl = qp.get("texts");
+  if (qp.has("bare") || BARE) document.body.classList.add("bare");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
   render(config);
