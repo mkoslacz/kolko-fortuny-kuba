@@ -249,6 +249,14 @@
 
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
+  /* Loading state: show a spinner until the sheet config is applied (no flash of placeholder values) */
+  .loader { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 60; }
+  body.loading .loader { display: flex; }
+  body.loading .topline, body.loading h1, body.loading .body-copy,
+  body.loading .stage, body.loading .spin-btn, body.loading footer { visibility: hidden; }
+  .loader i { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.22); border-top-color: var(--orange); animation: tmspin 0.8s linear infinite; }
+  @keyframes tmspin { to { transform: rotate(360deg); } }
+
   /* ---------- Editor (visible only with ?edit) ---------- */
   .editor {
     display: none;
@@ -353,6 +361,8 @@
     </div>
     <input class="linkout" id="linkOut" readonly placeholder="linkul pentru pagina statică va apărea aici" />
   </section>
+
+  <div class="loader" id="tmLoader" aria-hidden="true"><i></i></div>
 
   <canvas id="confetti"></canvas>
 
@@ -865,12 +875,25 @@
   if (qp.has("bare") || BARE) document.body.classList.add("bare");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
-  render(config);
 
   if (qp.has("edit")) {
+    render(config);
     initEditor();
   } else if (SHEET.prizesUrl) {
-    loadFromSheet().then(function (cfg) { config = cfg; render(cfg); }).catch(function () { /* keep defaults */ });
+    // Load the sheet FIRST so we never flash the built-in placeholder values.
+    document.body.classList.add("loading");
+    var settled = false;
+    function settle(cfg) {
+      if (settled) return;
+      settled = true;
+      if (cfg) config = cfg;
+      render(config);
+      document.body.classList.remove("loading");
+    }
+    loadFromSheet().then(settle).catch(function () { settle(null); });
+    setTimeout(function () { settle(null); }, 4000);   // fallback: show built-in values if the sheet is slow/unreachable
+  } else {
+    render(config);
   }
 })();
 </script>
