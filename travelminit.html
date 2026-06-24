@@ -249,13 +249,20 @@
 
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
-  /* Loading state: show a spinner until the sheet config is applied (no flash of placeholder values) */
-  .loader { display: none; position: fixed; inset: 0; align-items: center; justify-content: center; z-index: 60; }
-  body.loading .loader { display: flex; }
-  body.loading .topline, body.loading h1, body.loading .body-copy,
-  body.loading .stage, body.loading .spin-btn, body.loading footer { visibility: hidden; }
-  .loader i { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.22); border-top-color: var(--orange); animation: tmspin 0.8s linear infinite; }
-  @keyframes tmspin { to { transform: rotate(360deg); } }
+  /* Skeleton + shimmer loading: the wheel shows instantly with placeholders, then the real content fades in */
+  .wheel-shimmer {
+    position: absolute; inset: 12px; border-radius: 50%; z-index: 3; pointer-events: none; display: none;
+    background: linear-gradient(105deg, rgba(255,255,255,0) 42%, rgba(255,255,255,0.40) 50%, rgba(255,255,255,0) 58%);
+    background-size: 220% 100%; animation: tmsweep 1.15s linear infinite;
+  }
+  body.skeleton .wheel-shimmer { display: block; }
+  .skel-pill { animation: tmpulse 1.2s ease-in-out infinite; }
+  .topline, h1, .body-copy { transition: opacity 0.35s ease; }
+  body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
+  body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
+  @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
+  @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+  @keyframes tmfadein { from { opacity: 0; } to { opacity: 1; } }
 
   /* ---------- Editor (visible only with ?edit) ---------- */
   .editor {
@@ -325,6 +332,7 @@
   <div class="stage">
     <div class="pointer"></div>
     <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Roata vacanțelor"></svg>
+    <div class="wheel-shimmer" id="wheelShimmer" aria-hidden="true"></div>
     <button class="hub" id="hub" aria-label="Învârte roata">Învârte</button>
   </div>
 
@@ -361,8 +369,6 @@
     </div>
     <input class="linkout" id="linkOut" readonly placeholder="linkul pentru pagina statică va apărea aici" />
   </section>
-
-  <div class="loader" id="tmLoader" aria-hidden="true"><i></i></div>
 
   <canvas id="confetti"></canvas>
 
@@ -530,6 +536,25 @@
       svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
                '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(s.label) + '</text>' +
              '</g>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // ---------- Skeleton wheel (placeholder shown instantly while the sheet loads) ----------
+  function buildSkeleton() {
+    var n = 10, ang = 36, svg = "";
+    for (var k = 0; k < n; k++) {
+      var col = (k % 2 === 0) ? ORANGE : PURPLE;
+      var start = k * ang, end = (k + 1) * ang;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 0 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + col + '" opacity="0.5" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+      var mid = start + ang / 2;
+      svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')"><rect class="skel-pill" x="' + (CX - 26) + '" y="' + (CY - 106) + '" width="52" height="12" rx="6" fill="#fff"/></g>';
+      var ep = pt(mid, 168);
+      svg += '<circle class="skel-pill" cx="' + ep[0].toFixed(2) + '" cy="' + ep[1].toFixed(2) + '" r="9" fill="#fff"/>';
     }
     svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
     wheel.innerHTML = svg;
@@ -880,18 +905,27 @@
     render(config);
     initEditor();
   } else if (SHEET.prizesUrl) {
-    // Load the sheet FIRST so we never flash the built-in placeholder values.
-    document.body.classList.add("loading");
+    // Show the wheel instantly with shimmering placeholders, then fade in the real
+    // content once the sheet loads — and only then enable the buttons.
+    buildSkeleton();
+    document.body.classList.add("skeleton");
+    hub.disabled = true;
+    spinBtn.disabled = true;
     var settled = false;
     function settle(cfg) {
       if (settled) return;
       settled = true;
       if (cfg) config = cfg;
-      render(config);
-      document.body.classList.remove("loading");
+      applyTexts(config);
+      buildWheel(config);
+      wheel.style.animation = "none";
+      void wheel.offsetWidth;                 // restart the fade-in
+      wheel.style.animation = "tmfadein 0.4s ease";
+      document.body.classList.remove("skeleton");
+      setDisabled(false);                     // enable the buttons now
     }
     loadFromSheet().then(settle).catch(function () { settle(null); });
-    setTimeout(function () { settle(null); }, 4000);   // fallback: show built-in values if the sheet is slow/unreachable
+    setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
   } else {
     render(config);
   }
