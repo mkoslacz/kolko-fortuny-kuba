@@ -533,8 +533,10 @@
       var rLabel = 94;                              // inner band — leaves room for the icon near the rim
       var lr = flip ? 90 : -90;
       var fs = s.label.length > 9 ? 11 : 13;        // shrink long labels so they don't reach the icon
+      var maxChars = 14;                            // keep wheel labels short — long text belongs in the result, not on the wheel
+      var lbl = s.label.length > maxChars ? s.label.slice(0, maxChars - 1).replace(/\s+$/, "") + "…" : s.label;
       svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
-               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(s.label) + '</text>' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(lbl) + '</text>' +
              '</g>';
     }
     svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
@@ -798,23 +800,28 @@
     });
   }
   function parseCSV(text) {
-    var out = [];
-    String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").forEach(function (line) {
-      if (line === "") return;
-      var row = [], cur = "", inQ = false;
-      for (var i = 0; i < line.length; i++) {
-        var c = line.charAt(i);
-        if (inQ) {
-          if (c === '"') { if (line.charAt(i + 1) === '"') { cur += '"'; i++; } else inQ = false; }
-          else cur += c;
-        } else if (c === '"') inQ = true;
-        else if (c === ",") { row.push(cur); cur = ""; }
-        else cur += c;
+    // Proper streaming parser: quotes may contain commas AND newlines (multi-line cells)
+    text = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var rows = [], row = [], cur = "", inQ = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charAt(i);
+      if (inQ) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { cur += '"'; i++; }
+          else inQ = false;
+        } else cur += c;
+      } else if (c === '"') {
+        inQ = true;
+      } else if (c === ",") {
+        row.push(cur); cur = "";
+      } else if (c === "\n") {
+        row.push(cur); rows.push(row); row = []; cur = "";
+      } else {
+        cur += c;
       }
-      row.push(cur);
-      out.push(row);
-    });
-    return out;
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (cell) { return String(cell).trim() !== ""; }); });
   }
   function norm(s) {
     return String(s == null ? "" : s).trim().toLowerCase()
