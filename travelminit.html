@@ -963,6 +963,36 @@
   } else {
     render(config);
   }
+
+  // ---------- Live refresh of prizes ----------
+  // The wheel reads the sheet only once, at load. A session opened early (e.g. the
+  // first people to get the link, right at 12:00) would otherwise keep showing those
+  // first-loaded prizes forever, even after the sheet is updated — exactly the
+  // "works for most, stale only for the first openers" symptom. Re-read the sheet
+  // whenever the tab regains focus or is restored from bfcache, plus a slow
+  // heartbeat, so a long-open session never serves stale prizes. Guarded so it never
+  // disrupts a spin in progress or a result on screen.
+  if (SHEET.prizesUrl) {
+    var lastRefresh = Date.now();
+    function refreshFromSheet(force) {
+      if (!force && Date.now() - lastRefresh < 30000) return;        // throttle bursts
+      if (spinning || result.classList.contains("show")) return;     // never yank mid-spin / mid-result
+      lastRefresh = Date.now();
+      loadFromSheet().then(function (cfg) {
+        if (spinning || result.classList.contains("show")) return;
+        if (JSON.stringify([cfg.slots, cfg.texts]) === JSON.stringify([config.slots, config.texts])) return; // unchanged → no flicker
+        config = cfg;
+        applyTexts(config);
+        buildWheel(config);
+      }).catch(function () {});
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") refreshFromSheet(false);
+    });
+    window.addEventListener("focus", function () { refreshFromSheet(false); });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) refreshFromSheet(true); }); // bfcache restore
+    setInterval(function () { refreshFromSheet(false); }, 120000);   // heartbeat backstop
+  }
 })();
 </script>
 </body>
