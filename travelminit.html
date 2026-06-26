@@ -794,7 +794,11 @@
 
   // ---------- Google Sheet loading ----------
   function fetchCSV(url) {
-    return fetch(url, { cache: "no-store" }).then(function (r) {
+    // Cache-buster: a unique query param changes the URL so neither the browser
+    // nor Google's published-CSV edge cache can serve a stale copy. Without this,
+    // sheet edits can take minutes to appear ("zmiana arkusza nie pomaga").
+    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now();
+    return fetch(url + bust, { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     });
