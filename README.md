@@ -22,33 +22,99 @@ the rarest (≈ 11% chance; the others ≈ 22% each).
 
 (`https://mkoslacz.github.io/kolko-fortuny-kuba/` also works — it redirects to the above)
 
-## 🌴 Second version — Travelminit (Roata vacanțelor)
+## 🌴 Travelminit — Roata vacanțelor
 
-A rebranded variant for the Travelminit guerilla campaign *"Travelminit, du-mă oriunde cu 9 RON"*:
-brand colors (orange `#f8980d` / purple `#71246b` / white), Romanian copy, a **10-slot** wheel,
-unlimited spins, and confetti on a win. Three slot types (color-coded):
+Wersja Travelminit ma 10 pól, rumuńskie teksty i trzy typy wyników: nagrodę z linkiem,
+kupon z kodem oraz „spróbuj ponownie”.
 
-- 🟠 **Big prize** — links to the offer (e.g. a 9 RON stay); CTA *"Rezervă acum"*.
-- 🟣 **Coupon** — shows a **copyable discount code** + link; CTA *"Folosește cuponul"*.
-- ⚪ **Try again** — no link.
+### Nowa kampania = nowy, niezmienny adres wydania
 
-- **Public wheel:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html
-- **Prize editor:** https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html?edit
+Nie podmieniaj istniejącego `travelminit.html` tuż przed kampanią. Dla każdej kampanii
+tworzymy nowy fizyczny adres wydania; dzięki temu urządzenie, które było w poprzedniej
+kampanii, nie może użyć swojego starego pliku HTML.
 
-### Editing the prizes (no code)
+Gdy `Wersja` zawiera już pierwszy kompletny snapshot i jest opublikowana jako CSV, uruchom
+w katalogu projektu:
 
-Two ways:
+```bash
+bash scripts/create-travelminit-release.sh tm-20260720-r01 'https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv'
+```
 
-1. **Google Sheet (recommended for daily updates):** point the wheel at a published Google Sheet
-   (set `prizesUrl` / `textsUrl` near the top of `travelminit.html`). The wheel reads it **live**, so
-   editing the sheet updates the wheel — nothing else to touch, banner/embed link stays fixed.
-   Templates: [`travelminit-sheet-Premii.csv`](travelminit-sheet-Premii.csv) (prizes) and
-   [`travelminit-sheet-Texte.csv`](travelminit-sheet-Texte.csv) (texts) — import each into a tab named
-   `Premii` / `Texte`, then File → Share → Publish to web → CSV.
-2. **Built-in editor (`?edit`):** edit in a form, **"Aplică pe roată"** to preview, **"Copiază linkul"** —
-   the whole config is encoded in the link's `#cfg=…` hash. Good for a one-off or preview without a sheet.
+Skrypt tworzy `releases/tm-20260720-r01/travelminit.html` i wypisuje gotowy iframe z
+zakodowanym adresem manifestu. Dodaj nowy katalog do repozytorium i opublikuj go na GitHub
+Pages, a następnie **dokładnie ten wypisany iframe** wklej do Wix. Będzie miał postać:
 
-Offer links are sanitized to `http(s)` only; the layout is mobile-optimized.
+```html
+<iframe src="https://mateuszkoslacz.com/kolko-fortuny-kuba/releases/tm-20260720-r01/travelminit.html?bare=1&manifest=ZAKODOWANY_ADRES_WERSJA_CSV"
+  title="Roata vacanțelor Travelminit"
+  style="display:block; width:100%; border:0"
+  loading="eager"></iframe>
+```
+
+Od startu kampanii adres iframe i plik wydania pozostają niezmienne. Zmieniasz wyłącznie
+manifest `Wersja` według procedury niżej — bez edycji HTML-a, bez zmiany Wix i bez nowego URL-a
+w newsletterze.
+
+### Jedno źródło koła na Wix
+
+Na stronie kampanii osadzaj **tylko jeden iframe** wskazujący na publiczny adres powyżej. Nie
+zostawiaj równolegle statycznego HTML w Wix ani drugiego elementu dla widoku mobilnego — wtedy
+część osób może dostać inną, starszą wersję.
+
+Na stronie `roata-vacantelor` wyłącz cache strony:
+
+1. W Wix wejdź w **Pages & Menu**.
+2. Przy stronie kampanii kliknij **More Actions** → **Settings** → **Advanced Settings**.
+3. Włącz **Manually control caching for this page**.
+4. Przy **How often do you want to reset this page’s cache?** wybierz **Never (disable caching)**.
+5. Kliknij **Publish**. Samo zapisanie zmian nie aktualizuje strony produkcyjnej.
+
+### Atomowa publikacja treści — bez kodu
+
+Nie edytuj opublikowanych danych `Premii` i `Texte` w miejscu. Samo ustawienie wersji na końcu
+nie byłoby atomowe: użytkownik mógłby pobrać nowe premie i stare teksty albo odwrotnie.
+
+Zaimportuj do Google Sheeta dwa pliki robocze oraz manifest:
+
+- [`travelminit-sheet-Premii.csv`](travelminit-sheet-Premii.csv) → robocza zakładka `Premii`;
+- [`travelminit-sheet-Texte.csv`](travelminit-sheet-Texte.csv) → robocza zakładka `Texte`;
+- [`travelminit-sheet-Version.csv`](travelminit-sheet-Version.csv) → zakładka `Wersja`.
+
+Zakładkę `Wersja` opublikuj raz jako CSV (`File` → `Share` → `Publish to web` →
+`Comma-separated values (.csv)`). Jej stały adres podajesz skryptowi przy tworzeniu wydania;
+skrypt umieszcza go w adresie iframe jako parametr `manifest`.
+
+`Wersja` jest manifestem z dokładnie jednym aktywnym wierszem:
+
+- `revision` — nowy, rosnący identyfikator publikacji, np. `20260720002`;
+- `premii_url` — adres CSV **niezmiennego snapshotu** premii dla tej rewizji;
+- `texte_url` — adres CSV **niezmiennego snapshotu** tekstów dla tej rewizji;
+- `published_at` — czas przełączenia w ISO UTC, np. `2026-07-20T12:30:00Z`.
+
+Kolejność publikacji jest obowiązkowa:
+
+1. Zmień i sprawdź robocze `Premii` oraz `Texte`.
+2. Nadaj nową rewizję, np. `20260720002`, i zduplikuj obie zakładki jako
+   `Premii-20260720002` oraz `Texte-20260720002`.
+3. Opublikuj **obie duplikaty** przez `File` → `Share` → `Publish to web` →
+   `Comma-separated values (.csv)`; skopiuj ich dwa adresy CSV i sprawdź je w przeglądarce.
+4. Nigdy nie zmieniaj już opublikowanych snapshotów. Poprawka zawsze oznacza nową rewizję i nowe
+   duplikaty zakładek.
+5. **Dopiero na końcu** przygotuj pełny nowy wiersz manifestu i wklej go jedną operacją do
+   `Wersja`: `revision`, oba adresy snapshotów oraz `published_at`. Nie poprawiaj tych komórek
+   pojedynczo. Ten zapis przełącza komplet premii i tekstów.
+
+Nie używaj publicznie `?edit` ani linków z `#cfg=…`: omijają manifest i mogą utrwalić
+indywidualną, nieaktualną konfigurację.
+
+### Kontrola przed publikacją
+
+Po zmianie otwórz adres koła z `?debug=1` (jeżeli adres iframe ma już parametr, dodaj
+`&debug=1`). Sprawdź, czy pokazane `revision` i `published_at` są identyczne z manifestem
+`Wersja`, a następnie sprawdź zwykły publiczny adres bez parametru. Test wykonaj również na tym
+samym linku kampanijnym z UTM-ami, który był użyty w newsletterze.
+
+Linki ofert są przyjmowane wyłącznie w formacie `http(s)`; układ jest dostosowany do telefonu.
 
 ## 🛠️ How it works
 
