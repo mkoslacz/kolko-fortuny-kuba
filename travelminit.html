@@ -237,7 +237,7 @@
     box-shadow: 0 8px 20px rgba(248,152,13,0.42);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
-  .result.win .cta { display: inline-block; }
+  .result .cta[href] { display: inline-block; }   /* CTA follows the link, not the win styling */
   .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(248,152,13,0.55); }
 
   footer {
@@ -616,7 +616,7 @@
     } else {
       rTitle.textContent = s.title || s.label;
       rDesc.textContent = s.desc || "";
-      if (type === "coupon" && s.coupon) {
+      if (s.coupon) {                          // any slot carrying a code shows it, not just "cupon"
         rCouponCode.textContent = s.coupon;
         rCoupon.style.display = "flex";
       } else {
@@ -743,7 +743,9 @@
   }
 
   function gatherConfig() {
-    var c = { texts: {}, slots: [] };
+    // Start from the current texts so any key without an editor field survives
+    // "Aplică pe roată" instead of being silently dropped.
+    var c = { texts: deepCopy(config.texts), slots: [] };
     c.texts.topline = val("t_topline");
     c.texts.headline = val("t_headline");
     c.texts.body = val("t_body");

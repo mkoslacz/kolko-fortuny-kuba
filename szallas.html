@@ -546,8 +546,17 @@
     document.title = "🎡 Szallas.hu — Szerencsekerék";
   }
 
+  // Readable label colour when a slot sets a fill but no text colour — without this,
+  // a white slice coming from the sheet/editor would get white text and vanish.
+  function idealText(fill) {
+    var h = String(fill == null ? "" : fill).trim().replace("#", "");
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    if (!/^[0-9a-f]{6}$/i.test(h)) return WHITE;
+    var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? RED : WHITE;
+  }
   function colorFor(s) {
-    if (s && s.fill) return { fill: s.fill, text: s.text || WHITE };
+    if (s && s.fill) return { fill: s.fill, text: s.text || idealText(s.fill) };
     var type = s ? s.type : "";
     if (type === "tryagain") return { fill: WHITE, text: RED };
     if (type === "lose")     return { fill: RED,   text: WHITE };
