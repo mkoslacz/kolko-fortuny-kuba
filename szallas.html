@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🎡 Szállás.hu — Szerencsekerék</title>
+<title>🎡 Szallas.hu — Szerencsekerék</title>
 <meta name="description" content="Pörgesd meg a Szallas.hu szerencsekerekét és nyerj kedvezményeket, kuponokat vagy akár egy ingyen nyaralást! Sok szerencsét!" />
-<meta property="og:title" content="🎡 Szállás.hu — Szerencsekerék" />
+<meta property="og:title" content="🎡 Szallas.hu — Szerencsekerék" />
 <meta property="og:description" content="Pörgesd meg a kereket és foglald le álmaid belföldi nyaralását kedvezménnyel vagy akár teljesen ingyen!" />
 <meta property="og:type" content="website" />
 <meta name="robots" content="noindex" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
 <!--
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  Szállás.hu Szerencsekerék (fortune wheel). Self-contained page.        │
+  │  Szallas.hu Szerencsekerék (fortune wheel). Self-contained page.        │
   │  EDITOR: add ?edit to open the prize editor (e.g. …/szallas.html?edit). │
   │  Slot types: "fődíj"/"kupon" (code + link), "próbáld újra" (respin),    │
   │  "nincs nyeremény" (no win). Each slot has a "súly" (weight) = landing  │
-  │  probability. The grand prize is weight 0.05 (≈ max 2/day); set it to 0 │
+  │  probability. The grand prize is weight 0.05 (≈ max 1/day); set it to 0 │
   │  to retire it once claimed. Edit → "Alkalmazás a keréken" → "Link       │
   │  másolása"; the whole config travels inside the link's #cfg= hash.      │
   │  Prizes can also be driven live from a Google Sheet — see SHEET below.  │
@@ -44,7 +44,7 @@
   html, body { margin: 0; padding: 0; overflow-x: hidden; max-width: 100%; }
   body {
     min-height: 100vh;
-    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--ink);
     background:
       radial-gradient(1200px 780px at 50% 34%, #f0330f 0%, #e01d0c 34%, transparent 68%),
@@ -57,7 +57,7 @@
     overflow-x: hidden;
   }
   .logo {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 800;
     font-size: clamp(26px, 5vw, 34px);
     letter-spacing: -0.01em;
@@ -65,8 +65,11 @@
     text-align: center;
     margin: 2px 0 10px;
   }
-  .logo b { font-weight: 800; }
-  .logo .dot { color: #ff8a3d; }
+  /* Swap this text for the real Szallas.hu logo when the asset arrives:
+     <img class="logo-img" src="data:image/svg+xml;base64,…" alt="Szallas.hu">
+     If the supplied logo is solid-red (for white backgrounds), whiten it with
+     filter: brightness(0) invert(1); so it reads on our red background. */
+  .logo-img { display: block; height: clamp(26px, 5vw, 34px); width: auto; margin: 2px auto 10px; }
   .topline {
     letter-spacing: 0.34em;
     text-transform: uppercase;
@@ -78,7 +81,7 @@
   }
   .topline:empty { display: none; }
   h1 {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
     font-size: clamp(24px, 5.4vw, 44px);
     line-height: 1.06;
@@ -155,7 +158,7 @@
     border: none;
     cursor: pointer;
     color: #fff;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
     font-size: clamp(10px, 2.5vw, 15px);
     letter-spacing: 0;
@@ -171,7 +174,7 @@
   .spin-btn {
     margin-top: 18px;
     padding: 15px 42px;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 800;
     font-size: 17px;
     letter-spacing: 0.02em;
@@ -209,7 +212,7 @@
   }
   .result .emoji { font-size: 52px; line-height: 1; }
   .result .r-title {
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
     font-size: clamp(21px, 4.6vw, 29px);
     margin: 8px 0 8px;
@@ -228,12 +231,12 @@
   }
   .coupon-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
   .coupon-code {
-    font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.12em;
+    font-family: 'Inter', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.12em;
     color: #fff; background: rgba(255,255,255,0.18);
     border: 1.5px dashed rgba(255,255,255,0.75); padding: 7px 16px; border-radius: 10px;
   }
   .coupon-copy {
-    font: inherit; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; color: var(--orange);
+    font: inherit; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 13px; cursor: pointer; color: var(--orange);
     background: #fff; border: none;
     border-radius: 999px; padding: 8px 15px;
   }
@@ -242,7 +245,7 @@
   .cta {
     display: none;
     text-decoration: none;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 800;
     font-size: 16px;
     color: var(--orange);
@@ -252,35 +255,18 @@
     box-shadow: 0 10px 24px rgba(70,6,2,0.32), 0 0 0 4px rgba(255,255,255,0.18);
     transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
-  .result.win .cta { display: inline-block; }
+  .result .cta[href] { display: inline-block; }   /* shown for wins AND for the "no win" card */
   .cta:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(70,6,2,0.4), 0 0 0 4px rgba(255,255,255,0.24); }
 
-  .features {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 8px;
-    flex-wrap: nowrap;
-    width: min(94vw, 560px);
-    margin: 34px auto 0;
-  }
-  .features .feat { flex: 1 1 0; min-width: 0; text-align: center; padding: 0 4px; }
-  .features .feat + .feat { border-left: 1px solid rgba(255,255,255,0.22); }
-  .feat .ic {
-    width: 46px; height: 46px; margin: 0 auto 9px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; background: #fff; font-size: 22px; line-height: 1;
-    box-shadow: 0 6px 16px rgba(70,6,2,0.3);
-  }
-  .feat .ft { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12.5px; letter-spacing: 0.02em; text-transform: uppercase; color: #fff; line-height: 1.2; }
-  .feat .fs { font-size: 12px; color: rgba(255,255,255,0.82); margin-top: 3px; line-height: 1.25; }
-
   footer {
-    margin-top: 26px;
-    color: rgba(255,254,254,0.62);
-    font-size: 12px;
+    margin-top: 30px;
+    color: rgba(255,254,254,0.7);
+    font-size: 12.5px;
+    line-height: 1.6;
     text-align: center;
   }
+  footer .rules { color: #fff; text-decoration: underline; text-underline-offset: 2px; }
+  footer .rules:hover { color: #ffd9c2; }
 
   canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
@@ -311,7 +297,7 @@
     text-align: left;
   }
   body.edit .editor { display: block; }
-  .editor h2 { font-family:'Outfit',sans-serif; font-size: 18px; margin: 0 0 4px; color: var(--orange); }
+  .editor h2 { font-family:'Inter',sans-serif; font-size: 18px; margin: 0 0 4px; color: var(--orange); }
   .editor .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
   .editor label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
   .editor input, .editor textarea, .editor select {
@@ -324,7 +310,7 @@
     border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
     padding: 8px 14px 14px; margin: 12px 0;
   }
-  .editor legend { padding: 0 8px; font-family:'Outfit',sans-serif; font-weight: 700; font-size: 14px; }
+  .editor legend { padding: 0 8px; font-family:'Inter',sans-serif; font-weight: 700; font-size: 14px; }
   .editor legend .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
   .tag.prize { background: var(--orange); color: #fff; }
   .tag.coupon { background: var(--orange); color: #fff; }
@@ -333,7 +319,7 @@
   .row2 { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
   .editor .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
   .btn {
-    font-family:'Outfit',sans-serif; font-weight: 800; font-size: 14px;
+    font-family:'Inter',sans-serif; font-weight: 800; font-size: 14px;
     border: none; border-radius: 999px; padding: 11px 20px; cursor: pointer;
   }
   .btn-primary { background: linear-gradient(180deg,#ff8a3d,var(--orange) 48%,#ef5300); color:#fff; }
@@ -361,7 +347,7 @@
 </style>
 </head>
 <body>
-  <div class="logo"><b>Szállás</b><span class="dot">.hu</span></div>
+  <div class="logo">Szallas.hu</div>
   <div class="topline" id="topline"></div>
   <h1 id="headline">Most olcsóbb a nyaralás a Szallas.hu-val!</h1>
   <div class="body-copy" id="bodyCopy"></div>
@@ -387,13 +373,10 @@
     <a class="cta" id="rCta" target="_blank" rel="noopener">Felhasználom a kedvezményt →</a>
   </div>
 
-  <div class="features">
-    <div class="feat"><div class="ic">🎁</div><div class="ft">Ingyenes nyaralás</div><div class="fs">Szerencsés sorsolás</div></div>
-    <div class="feat"><div class="ic">⚡</div><div class="ft">Kedvezmények</div><div class="fs">Azonnali felhasználás</div></div>
-    <div class="feat"><div class="ic">🛡️</div><div class="ft">Teljes biztonság</div><div class="fs">Hitelesített ajánlatok</div></div>
-  </div>
-
-  <footer>Szallas.hu · Szerencsekerék 🎡</footer>
+  <footer>
+    Szallas.hu · Szerencsekerék ·
+    <a class="rules" href="https://szallas.hu/szallashu-szerencsekerek-szabalyzat" target="_blank" rel="noopener">Játékszabályzat</a>
+  </footer>
 
   <!-- Editor (only when ?edit is in the URL) -->
   <section class="editor" id="editor">
@@ -424,42 +407,44 @@
     texts: {
       topline: "",
       headline: "Most olcsóbb a nyaralás a Szallas.hu-val!",
-      body: "Eleged van mindenből és egy kis kikapcsolódásra vágysz? Most a Szallas.hu-n egy kis szerencsével akár ingyen is nyaralhatsz!\n2026. július x. és y. között pörgesd meg a kereket és foglald le álmaid belföldi nyaralását kedvezménnyel vagy akár teljesen ingyen!\nSok szerencsét!",
+      body: "Kikapcsolódásra vágysz? A Szallas.hu-n egy kis szerencsével akár ingyen is nyaralhatsz!\n2026. július 15. és 17. között pörgesd meg a kereket és foglald le álmaid belföldi nyaralását kedvezménnyel vagy akár teljesen ingyen!\nSok szerencsét!",
       spinButton: "Megpörgetem a kereket",
       hub: "Pörgess!",
       ctaPrize: "Felhasználom a kedvezményt →",
       ctaCoupon: "Felhasználom a kedvezményt →",
+      ctaLose: "Irány a szállásokhoz →",
       tryAgainTitle: "Próbáld újra!",
       tryAgainDesc: "A szerencse karnyújtásnyira van — pörgesd meg újra a kereket!",
-      loseTitle: "Sajnos most nem nyertél",
-      loseDesc: "Ne add fel! Pörgesd meg újra a kereket, és próbálj szerencsét!"
+      loseTitle: "Sajnos ma nem nyertél, de sebaj, ne csüggedj!",
+      loseDesc: "Bár a szerencsekerék most nem adott kedvezményt, a Szallas.hu-n rengeteg fantasztikus nyári ajánlat vár rád. Foglald le a tökéletes kikapcsolódást még ma!"
     },
-    // 8 slots. type: "prize"/"coupon" (code + link) | "tryagain" (respin) | "lose" (no win).
-    // "weight" = landing probability (relative). "fill"/"text" = slice colors.
-    // Grand prize is weight 0.05 (max 2/day). To retire it once claimed, set its weight to 0.
+    // 8 slots. type: "prize"/"coupon" (code + link) | "tryagain" (respin) | "lose" (no win, has CTA).
+    // "weight" = landing probability (relative, sums to 100). "fill"/"text" = slice colors.
+    // Grand prize is weight 0.05 — HARD LIMIT max 1/day. Once claimed, set its weight to 0
+    // (it is then never landed on, and the spin silently falls to the other slices).
     slots: [
-      { type: "prize",    icon: "🎁", label: "100 000 Ft",   weight: 0.05, fill: "#fffefe", text: "#c8180b",
+      { type: "prize",    icon: "🎁", label: "100 000 Ft",    weight: 0.05, fill: "#fffefe", text: "#c8180b",
         title: "Gratulálunk, tiéd a főnyeremény! 100 000 Ft értékű kupont pörgettél!",
-        desc: "A kedvezményt biztosító kupon 2026.07.x-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "SZ100000", url: "https://szallas.hu/magyarorszag" },
-      { type: "coupon",   icon: "🏷️", label: "-10%",         weight: 18,   fill: "#ff6601", text: "#fffefe",
-        title: "Gratulálunk! 10% kedvezményt biztosító kupont pörgettél!",
-        desc: "A kedvezményt biztosító kupon 2026.07.x-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "SZ10", url: "https://szallas.hu/magyarorszag" },
-      { type: "lose",     icon: "😔", label: "Nem nyertél",   weight: 20,   fill: "#ff6601", text: "#fffefe",
-        title: "", desc: "", coupon: "", url: "" },
-      { type: "coupon",   icon: "💵", label: "5000 Ft",       weight: 13,   fill: "#c8180b", text: "#fffefe",
-        title: "Gratulálunk! 5 000 Ft értékű kupont pörgettél!",
-        desc: "A kedvezmény legalább 60 000 Ft értékű foglalásokra érvényes, és a 2026.08.31-ig megvalósuló utazások esetén váltható be. A kupon 2026.07.x-ig érvényes.", coupon: "SZ5000", url: "https://szallas.hu/magyarorszag" },
-      { type: "coupon",   icon: "🏷️", label: "-5%",          weight: 25,   fill: "#c8180b", text: "#fffefe",
+        desc: "A kedvezményt biztosító kupon 2026.07.22-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "", url: "https://szallas.hu/magyarorszag" },
+      { type: "coupon",   icon: "🏷️", label: "5% kedvezmény", weight: 25,   fill: "#ff6601", text: "#fffefe",
         title: "Gratulálunk! 5% kedvezményt biztosító kupont pörgettél!",
-        desc: "A kedvezményt biztosító kupon 2026.07.x-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "SZ5", url: "https://szallas.hu/magyarorszag" },
+        desc: "A kedvezményt biztosító kupon 2026.07.22-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "NEJPATC", url: "https://szallas.hu/magyarorszag" },
       { type: "coupon",   icon: "💵", label: "10 000 Ft",     weight: 1.95, fill: "#c8180b", text: "#fffefe",
         title: "Gratulálunk! 10 000 Ft értékű kupont pörgettél!",
-        desc: "A kedvezmény legalább 60 000 Ft értékű foglalásokra érvényes, és a 2026.08.31-ig megvalósuló utazások esetén váltható be. A kupon 2026.07.x-ig érvényes.", coupon: "SZ10000", url: "https://szallas.hu/magyarorszag" },
+        desc: "A kedvezmény legalább 60 000 Ft értékű foglalásokra érvényes, és a 2026.08.31-ig megvalósuló utazások esetén váltható be. A kupon 2026.07.22-ig érvényes.", coupon: "4FVC8XY", url: "https://szallas.hu/magyarorszag" },
+      { type: "lose",     icon: "😔", label: "Nem nyertél",   weight: 20,   fill: "#ff6601", text: "#fffefe",
+        title: "", desc: "", coupon: "", url: "https://szallas.hu/magyarorszag" },
+      { type: "coupon",   icon: "💵", label: "5 000 Ft",      weight: 18,   fill: "#fffefe", text: "#c8180b",
+        title: "Gratulálunk! 5 000 Ft értékű kupont pörgettél!",
+        desc: "A kedvezmény legalább 60 000 Ft értékű foglalásokra érvényes, és a 2026.08.31-ig megvalósuló utazások esetén váltható be. A kupon 2026.07.22-ig érvényes.", coupon: "BSSB7J8", url: "https://szallas.hu/magyarorszag" },
+      { type: "coupon",   icon: "🏷️", label: "8% kedvezmény", weight: 13,   fill: "#c8180b", text: "#fffefe",
+        title: "Gratulálunk! 8% kedvezményt biztosító kupont pörgettél!",
+        desc: "A kedvezményt biztosító kupon 2026.07.22-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "BA8CWLY", url: "https://szallas.hu/magyarorszag" },
       { type: "tryagain", icon: "🔄", label: "Próbáld újra!", weight: 18,   fill: "#fffefe", text: "#c8180b",
         title: "", desc: "", coupon: "", url: "" },
-      { type: "coupon",   icon: "💵", label: "8000 Ft",       weight: 4,    fill: "#fffefe", text: "#c8180b",
-        title: "Gratulálunk! 8 000 Ft értékű kupont pörgettél!",
-        desc: "A kedvezmény legalább 60 000 Ft értékű foglalásokra érvényes, és a 2026.08.31-ig megvalósuló utazások esetén váltható be. A kupon 2026.07.x-ig érvényes.", coupon: "SZ8000", url: "https://szallas.hu/magyarorszag" }
+      { type: "coupon",   icon: "🏷️", label: "10% kedvezmény", weight: 4,   fill: "#ff6601", text: "#fffefe",
+        title: "Gratulálunk! 10% kedvezményt biztosító kupont pörgettél!",
+        desc: "A kedvezményt biztosító kupon 2026.07.22-ig érvényes és a 2026.08.31-ig megvalósuló utazások esetén váltható be.", coupon: "5F44SK3", url: "https://szallas.hu/magyarorszag" }
     ]
   };
 
@@ -558,7 +543,7 @@
     });
     spinBtn.textContent = cfg.texts.spinButton;
     hub.textContent = cfg.texts.hub;
-    document.title = "🎡 Szállás.hu — Szerencsekerék";
+    document.title = "🎡 Szallas.hu — Szerencsekerék";
   }
 
   function colorFor(s) {
@@ -597,7 +582,7 @@
       var maxChars = 14;                            // keep wheel labels short — long text belongs in the result, not on the wheel
       var lbl = s.label.length > maxChars ? s.label.slice(0, maxChars - 1).replace(/\s+$/, "") + "…" : s.label;
       svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
-               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Outfit, sans-serif">' + esc(lbl) + '</text>' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(lbl) + '</text>' +
              '</g>';
     }
     svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
@@ -691,7 +676,12 @@
       rTitle.textContent = (type === "lose") ? config.texts.loseTitle : config.texts.tryAgainTitle;
       rDesc.textContent  = (type === "lose") ? config.texts.loseDesc  : config.texts.tryAgainDesc;
       rCoupon.style.display = "none";
-      rCta.removeAttribute("href");
+      if (type === "lose" && s.url) {          // "no win" still routes the user into the listings
+        rCta.textContent = config.texts.ctaLose || config.texts.ctaPrize;
+        rCta.setAttribute("href", s.url);
+      } else {
+        rCta.removeAttribute("href");
+      }
     } else {
       rTitle.textContent = s.title || s.label;
       rDesc.textContent = s.desc || "";
@@ -799,6 +789,7 @@
     html += area("Szöveg (bekezdések külön sorokban)", "t_body", t.body);
     html += '<div class="row2">' + field("Gomb", "t_spinButton", t.spinButton) + field("Közép", "t_hub", t.hub) + '</div>';
     html += '<div class="row2">' + field("Gomb «fődíj»", "t_ctaPrize", t.ctaPrize) + field("Gomb «kupon»", "t_ctaCoupon", t.ctaCoupon) + '</div>';
+    html += field("Gomb «nincs nyeremény»", "t_ctaLose", t.ctaLose);
     html += '<div class="row2">' + field("«Próbáld újra» cím", "t_taTitle", t.tryAgainTitle) + field("«Nincs nyeremény» cím", "t_loseTitle", t.loseTitle) + '</div>';
     html += '<div class="row2">' + area("«Próbáld újra» leírás", "t_taDesc", t.tryAgainDesc) + area("«Nincs nyeremény» leírás", "t_loseDesc", t.loseDesc) + '</div>';
 
@@ -829,7 +820,9 @@
   }
 
   function gatherConfig() {
-    var c = { texts: {}, slots: [] };
+    // Start from the current texts so any key that has no editor field (e.g. ctaLose)
+    // survives an "Alkalmazás" instead of being silently dropped.
+    var c = { texts: deepCopy(config.texts), slots: [] };
     c.texts.topline = val("t_topline");
     c.texts.headline = val("t_headline");
     c.texts.body = val("t_body");
@@ -837,6 +830,7 @@
     c.texts.hub = val("t_hub");
     c.texts.ctaPrize = val("t_ctaPrize");
     c.texts.ctaCoupon = val("t_ctaCoupon");
+    c.texts.ctaLose = val("t_ctaLose");
     c.texts.tryAgainTitle = val("t_taTitle");
     c.texts.tryAgainDesc = val("t_taDesc");
     c.texts.loseTitle = val("t_loseTitle");
