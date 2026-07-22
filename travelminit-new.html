@@ -17,8 +17,8 @@
 <!--
   ┌──────────────────────────────────────────────────────────────────────┐
   │  EDITOR: local preview only — never use ?edit or #cfg in a campaign.   │
-  │  The public wheel receives one immutable snapshot through the published │
-  │  Google Sheets manifest configured below.                               │
+  │  The public wheel reads two live, cache-busted CSV tabs configured      │
+  │  below.                                                                 │
   └──────────────────────────────────────────────────────────────────────┘
 -->
 
@@ -424,22 +424,22 @@
   };
 
   // ───────────────────────────────────────────────────────────────────────
-  //  GOOGLE SHEET — the campaign reads one immutable configuration snapshot.
-  //  The manifest is the only source of truth in production; it points to
-  //  the two published snapshot CSV files. A campaign release receives its
-  //  manifest injected into an immutable release by the release generator.
+  //  GOOGLE SHEET — the campaign reads two live, auto-republished CSV tabs.
+  //  A release receives their URLs once, then the campaign team edits only
+  //  the Sheet. Every request has a cache-buster, so an old browser/CDN copy
+  //  cannot keep the old data after Google has republished it.
   //  This source file intentionally has no fallback link to the legacy Sheet.
   //  Get a link: Google Sheets → File → Share → Publish to web → choose the
   //  tab → "Comma-separated values (.csv)" → Publish → copy the URL.
-  //    • Tab "Version" → manifestUrl (revision, prizes_url, texts_url, published_at)
-  //    • Each URL in Version must point to an IMMUTABLE published CSV snapshot.
-  //      Never edit a snapshot after Version starts pointing to it.
+  //    • Tab "Prizes" → prizesUrl (type, icon, label, title, description, coupon, url)
+  //    • Tab "Texts"  → textsUrl  (key, value)
+  //    • Publish each tab once with "Automatically republish when changes are made" enabled.
   // ───────────────────────────────────────────────────────────────────────
   var SHEET = {
     prizesUrl: "",
     textsUrl: "",
-    // The release generator replaces this with the campaign's published
-    // Version CSV URL. Never put the legacy sheet URL here.
+    // Reserved for a future versioned configuration mode. New campaign
+    // releases intentionally leave this empty and use the two live CSV tabs.
     manifestUrl: ""
   };
 
@@ -828,10 +828,10 @@
     });
   }
 
-  // ---------- Published configuration snapshots ----------
+  // ---------- Live Google Sheet configuration ----------
   // Every request receives a unique URL, so neither the browser nor Google's CSV
   // cache can silently return its previous response. Google may still need a short
-  // time to publish a Sheet change; the wheel never treats that as a new revision.
+  // time to auto-republish a Sheet change.
   function fetchCSV(url) {
     var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now();
     return fetch(url + bust, { cache: "no-store" }).then(function (r) {
@@ -985,7 +985,7 @@
   }
 
   // ---------- Synchronization state ----------
-  var CONFIG_POLL_MS = 60000;
+  var CONFIG_POLL_MS = 120000;
   var INITIAL_RETRY_MS = 15000;
   var activeSnapshot = null;
   var pendingSnapshot = null;

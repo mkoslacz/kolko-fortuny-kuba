@@ -32,10 +32,10 @@ There are two deliberately isolated Travelminit wheels:
 - **New campaign source:** [`travelminit-new.html`](travelminit-new.html) has no legacy Sheet
   URL. It is used only to create a new, immutable campaign release.
 
-The generator copies only the new source:
+The generator copies only the new source and injects the two live, published CSV URLs:
 
 ```bash
-bash scripts/create-travelminit-release.sh tm-YYYYMMDD-r01 '<published Version CSV URL>'
+bash scripts/create-travelminit-release.sh tm-YYYYMMDD-r01 '<published Prizes CSV URL>' '<published Texts CSV URL>'
 ```
 
 The full English Wix embedding and release procedure is in

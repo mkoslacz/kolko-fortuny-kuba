@@ -1,162 +1,152 @@
-# Travelminit Wheel — Wix Embedding and Release Guide
+# Travelminit Wheel — Live Google Sheet and Wix Guide
 
 ## 1. Two independent wheels
 
 ### Legacy fallback — do not change
 
-The existing wheel remains available at:
+The existing fallback remains at:
 
 `https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html`
 
-It uses the existing legacy Google Sheet. It must not be edited, replaced, or pointed at the new
-campaign data. Use this URL only as an emergency fallback if a new campaign release is not ready.
-
-Do not add a `manifest` parameter to the legacy URL. Do not reuse the legacy URL for a new
-campaign.
+It keeps using the existing legacy Google Sheet. Do not change its code, URL, or Sheet. It is the
+emergency fallback.
 
 ### New campaign wheel
 
-Each new campaign receives its own immutable release URL, for example:
+The new campaign uses the same proven live-Sheet mechanism as legacy, but with a different Google
+Sheet and a different immutable release URL, for example:
 
 `https://mateuszkoslacz.com/kolko-fortuny-kuba/releases/tm-20260722-r01/travelminit.html?bare=1`
 
-Engineering creates this URL after receiving the public CSV URL of the `Version` sheet tab and
-stores that URL inside the immutable release. Do not assemble or edit the URL manually. The Google
-Sheet itself is never embedded in Wix; Wix receives only the final wheel URL.
+The Wix URL remains unchanged for the whole campaign. After first setup, campaign changes happen
+only in Google Sheets: no new Wix publish, no new HTML release, and no manual CSV re-publish.
 
-## 2. Embed the new wheel in Wix
+## 2. One-time Google Sheet setup
+
+Create one **new** Google Sheet for this campaign. Do not copy, rename, edit, or connect the legacy
+Sheet. The new Sheet contains only public campaign copy and offers; do not put personal or sensitive
+data in it.
+
+Create exactly two tabs, with these English names:
+
+### `Prizes`
+
+First row:
+
+```text
+type,icon,label,title,description,coupon,url
+```
+
+Add one row per wheel segment. Use `prize`, `coupon`, or `tryagain` as `type`.
+
+- `prize`: use `icon`, `label`, `title`, `description`, and `url`; leave `coupon` empty.
+- `coupon`: use all fields, including `coupon` and `url`.
+- `tryagain`: use `type`, `icon`, and `label`; the other fields may be empty.
+
+### `Texts`
+
+First row:
+
+```text
+key,value
+```
+
+Use these keys, each with a non-empty value:
+
+```text
+topline
+headline
+body1
+body2
+body3
+spinButton
+hub
+ctaPrize
+ctaCoupon
+tryAgainTitle
+tryAgainDesc
+```
+
+Tab names, headers, and keys stay in English. The visible campaign copy may be Romanian.
+
+## 3. Publish the two tabs once
+
+For **each** tab (`Prizes` and `Texts`):
+
+1. Open **File → Share → Publish to web**.
+2. Select the individual tab, not the full spreadsheet.
+3. Select **Comma-separated values (.csv)**.
+4. Click **Publish** and copy the URL.
+5. In **Published content and settings**, make sure **Automatically republish when changes are
+   made** stays enabled.
+
+Send the two published CSV URLs to Engineering once. Do not create a `Version` tab, snapshot tabs,
+or a new CSV URL for ordinary campaign edits.
+
+Google automatically republishes Sheet edits; Google says this can take a few minutes. The wheel
+also requests a fresh CSV URL on load, when the tab regains focus, and every two minutes, so the
+browser and CDN cannot keep serving an old cached response.
+
+## 4. Initial engineering release
+
+Engineering creates one immutable release from the two URLs:
+
+```bash
+bash scripts/create-travelminit-release.sh tm-20260722-r01 '<published Prizes CSV URL>' '<published Texts CSV URL>'
+git add releases/tm-20260722-r01/travelminit.html
+git commit -m 'feat: release Travelminit campaign tm-20260722-r01'
+git push origin main
+```
+
+After the exact public URL returns HTTP 200, Engineering sends this URL to Wix:
+
+`https://mateuszkoslacz.com/kolko-fortuny-kuba/releases/tm-20260722-r01/travelminit.html?bare=1`
+
+## 5. Embed in Wix — once
 
 Use **Embed a Site**, not copied static HTML.
 
 1. Open the campaign page in Wix.
-2. Select **Add Elements** → **Embed Code** → **Embed a Site**.
-3. Select the embed and choose **Enter Website Address**.
-4. Paste the exact final release URL supplied by Engineering.
-5. Set the element to the full available page width and make its height large enough to show the
-   full wheel, spin button, and result card on both desktop and mobile.
-6. Remove or disable every older wheel element on this page: old HTML embeds, copied static HTML,
-   duplicate mobile embeds, and previous iframe URLs.
-7. Publish the Wix site.
+2. Choose **Add Elements → Embed Code → Embed a Site**.
+3. Choose **Enter Website Address** and paste the final release URL from Engineering.
+4. Remove or disable every old or duplicate wheel element on this page.
+5. Publish Wix.
+6. In **Pages & Menu → More Actions → Settings → Advanced Settings**, enable manual page-cache
+   control and select **Never (disable caching)**. Publish Wix again.
+7. In Wix Mobile Editor, confirm that the one remaining embed is enabled, fully visible, and not
+   clipped.
 
-For this campaign page, disable Wix page caching:
+## 6. Every ordinary campaign change
 
-1. Open **Pages & Menu**.
-2. Click **More Actions** next to the campaign page.
-3. Open **Settings** → **Advanced Settings**.
-4. Enable manual page-cache control.
-5. Select **Never (disable caching)**.
-6. Publish again.
+Edit only the cells in `Prizes` or `Texts`.
 
-There must be exactly one wheel on the page.
+If one campaign change affects both tabs, complete both edits in one short session and verify the
+live wheel after a few minutes. This keeps the short Google auto-republish window from showing a
+new prize list with old copy, or the reverse.
 
-## 3. First release of a new campaign
+Do **not**:
 
-The new wheel uses a Google Sheets manifest and immutable data snapshots.
+- publish CSV again;
+- create a new Sheet tab;
+- change the Wix URL;
+- rebuild or redeploy the wheel.
 
-1. Create a completely new Google Sheet for this campaign. Do not copy, rename, or edit the
-   legacy campaign Sheet.
-2. Create exactly three working tabs, using these English names: `Prizes`, `Texts`, and `Version`.
-3. Use this exact header row in `Prizes`:
-   `type,icon,label,title,description,coupon,url`.
-   Add one row for every wheel segment. `type` must be `prize`, `coupon`, or `tryagain`.
-4. Use this exact header row in `Texts`: `key,value`. Keep every required key:
-   `topline`, `headline`, `body1`, `body2`, `body3`, `spinButton`, `hub`, `ctaPrize`,
-   `ctaCoupon`, `tryAgainTitle`, and `tryAgainDesc`.
-5. Review the campaign content in `Prizes` and `Texts`, then choose a new numeric revision, for
-   example `20260722001`.
-6. Duplicate the approved working tabs as `Prizes-20260722001` and `Texts-20260722001`.
-7. Publish **each snapshot tab individually** as CSV:
-   **File → Share → Publish to web → Link → select that tab → Comma-separated values (.csv) →
-   Publish**. Copy the generated URL for each tab.
-8. Open both published CSV URLs in a private browser window and verify their contents.
-9. Put exactly one active row into `Version`, using this exact header row:
-   `revision,prizes_url,texts_url,published_at`.
-   The one data row must contain the numeric revision and the two snapshot CSV URLs.
-10. Publish the `Version` tab as CSV through the same path. Send its **published CSV URL** (not a
-    Google Sheets `/edit` URL) to Engineering.
-11. Engineering creates and publishes the immutable wheel release:
+Open the live release URL with `?bare=1&debug=1` after a few minutes to check that the new content
+has arrived. The Wix URL itself stays unchanged.
 
-    ```bash
-    bash scripts/create-travelminit-release.sh tm-20260722-r01 '<published Version CSV URL>'
-    git add releases/tm-20260722-r01/travelminit.html
-    git commit -m 'feat: release Travelminit campaign tm-20260722-r01'
-    git push origin main
-    ```
+## 7. Code or layout change
 
-12. Engineering waits until the exact public release URL returns HTTP 200, then returns that final
-    Wix URL.
-13. Paste that URL into Wix following section 2.
+Only a code or layout change needs a new HTML release and a Wix URL swap:
 
-Never edit a published snapshot tab after it has been referenced by `Version`.
+1. Keep the current release available for rollback.
+2. Create a new release using the same two CSV URLs.
+3. Test its direct URL on desktop and mobile.
+4. Replace the Wix embed URL only after the test passes, then publish Wix.
 
-## 4. Publishing a content change during a live campaign
+## 8. Rollback
 
-A content update does not require a Wix change, a new iframe URL, or a new HTML release.
-
-1. Update the working `Prizes` and `Texts` tabs.
-2. Create a new, higher numeric revision.
-3. Duplicate both tabs into new snapshot tabs named with that revision.
-4. Publish both new snapshot tabs as CSV.
-5. Verify both CSV URLs.
-6. Replace the one active row in `Version` in one paste operation.
-7. Do not edit individual manifest cells one by one.
-8. Verify the live wheel using the release URL with `?bare=1&debug=1`.
-
-The live wheel loads prizes and texts as one complete version. It never mixes an old `Prizes`
-snapshot with a new `Texts` snapshot.
-
-## 5. Releasing a code or layout change
-
-Create a new release only when the wheel HTML, behaviour, or visual design changes.
-
-1. Keep the currently live release unchanged.
-2. Create a new release ID, for example `tm-20260722-r02`.
-3. Run:
-
-   ```bash
-   bash scripts/create-travelminit-release.sh tm-20260722-r02 '<published Version CSV URL>'
-   ```
-
-4. Commit and push the generated `releases/tm-20260722-r02/travelminit.html` file:
-
-   ```bash
-   git add releases/tm-20260722-r02/travelminit.html
-   git commit -m 'feat: release Travelminit campaign tm-20260722-r02'
-   git push origin main
-   ```
-
-5. Wait until the exact public release URL returns HTTP 200, then test it with
-   `?bare=1&debug=1`.
-6. Verify it in Wix Preview on desktop and mobile.
-7. Replace the Wix embed URL only after the new release passes verification.
-8. Publish Wix.
-9. Keep the previous release available for rollback.
-
-A code release changes the Wix URL once. A data-only release changes only `Version`.
-
-## 6. Rollback
-
-### Roll back campaign content
-
-Create a new, higher manifest revision that points to the previously known-good pair of immutable
-snapshot CSV files. Do not decrease the revision number and do not edit an old snapshot.
-
-### Roll back wheel code
-
-Replace the Wix embed URL with the previous known-good release URL and publish Wix.
-
-The legacy wheel remains independently available at:
+For a campaign-content rollback, restore the prior values in `Prizes` or `Texts` (Google Sheets
+version history is suitable). For a code rollback, switch Wix back to the previous immutable release
+URL. The independent legacy fallback is always available at:
 
 `https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html`
-
-## 7. Final release check
-
-Before sending campaign traffic:
-
-1. Open the direct new release URL with `?bare=1&debug=1`.
-2. Confirm that the displayed revision and publication time match `Version`.
-3. Open the real Wix campaign URL, including its UTM parameters.
-4. Test on desktop and mobile.
-5. In Wix Mobile Editor, confirm that the embed is enabled, fully visible, and not clipped.
-6. Confirm that there is exactly one wheel on the page.
-7. Open the legacy URL separately and confirm that it still shows the old legacy wheel.

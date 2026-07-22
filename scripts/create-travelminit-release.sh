@@ -4,13 +4,14 @@ set -euo pipefail
 # Creates one immutable, deployable HTML address for a Travelminit campaign
 # and prints the exact Wix URL plus an iframe fallback.
 
-if [ "$#" -ne 2 ]; then
-  printf 'Usage: bash scripts/create-travelminit-release.sh <release-id> <manifest-csv-url>\n' >&2
+if [ "$#" -ne 3 ]; then
+  printf 'Usage: bash scripts/create-travelminit-release.sh <release-id> <prizes-csv-url> <texts-csv-url>\n' >&2
   exit 64
 fi
 
 release_id="$1"
-manifest_url="$2"
+prizes_url="$2"
+texts_url="$3"
 
 case "$release_id" in
   ''|*[!a-zA-Z0-9._-]*)
@@ -19,10 +20,18 @@ case "$release_id" in
     ;;
 esac
 
-case "$manifest_url" in
+case "$prizes_url" in
   https://*) ;;
   *)
-    printf 'Manifest URL must start with https://\n' >&2
+    printf 'Prizes URL must start with https://\n' >&2
+    exit 64
+    ;;
+esac
+
+case "$texts_url" in
+  https://*) ;;
+  *)
+    printf 'Texts URL must start with https://\n' >&2
     exit 64
     ;;
 esac
@@ -36,21 +45,27 @@ fi
 mkdir -p "$release_dir"
 cp travelminit-new.html "$release_dir/travelminit.html"
 
-python3 - "$release_dir/travelminit.html" "$manifest_url" <<'PY'
+python3 - "$release_dir/travelminit.html" "$prizes_url" "$texts_url" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 release_file = Path(sys.argv[1])
-manifest_url = sys.argv[2]
+prizes_url = sys.argv[2]
+texts_url = sys.argv[3]
 source = release_file.read_text(encoding="utf-8")
-needle = 'manifestUrl: ""'
+replacements = {
+    'prizesUrl: ""': 'prizesUrl: ' + json.dumps(prizes_url),
+    'textsUrl: ""': 'textsUrl: ' + json.dumps(texts_url),
+}
 
-if source.count(needle) != 1:
-    raise SystemExit("Could not inject the manifest URL into the release source.")
+for needle, replacement in replacements.items():
+    if source.count(needle) != 1:
+        raise SystemExit("Could not inject the live Sheet URL into the release source.")
+    source = source.replace(needle, replacement, 1)
 
 release_file.write_text(
-    source.replace(needle, "manifestUrl: " + json.dumps(manifest_url), 1),
+    source,
     encoding="utf-8",
 )
 PY
