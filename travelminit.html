@@ -86,6 +86,18 @@
   .body-copy p:last-child { margin-bottom: 0; }
   .body-copy b { color: #fff; }
 
+  /* This copy is shown instead of the campaign copy while Status is 0. It is
+     deliberately separate from the normal header so a Wix "wheel-only" embed
+     still explains why the button is unavailable. */
+  .prelive-copy { display: none; width: 100%; }
+  body.pre-live > .topline,
+  body.pre-live > h1,
+  body.pre-live > .body-copy { display: none; }
+  body.pre-live .prelive-copy { display: block; }
+  body.pre-live .spin-btn { display: none; }
+  body.pre-live .pointer { opacity: 0.62; }
+  body.pre-live .hub { cursor: default; }
+
   .stage {
     position: relative;
     width: min(88vw, 470px);
@@ -322,6 +334,9 @@
   /* Wheel-only mode (?bare=1 or BARE=true): hide page text/footer, embed just the wheel as a box */
   body.bare { padding-top: 14px; }
   body.bare .topline, body.bare h1, body.bare .body-copy, body.bare footer { display: none; }
+  body.bare.pre-live .prelive-copy .topline,
+  body.bare.pre-live .prelive-copy h1,
+  body.bare.pre-live .prelive-copy .body-copy { display: block; }
 
   /* ---------- Mobile: compact the header so the wheel + button fit ---------- */
   @media (max-width: 480px) {
@@ -342,6 +357,12 @@
   <div class="topline" id="topline">Roata vacanțelor</div>
   <h1 id="headline">Travelminit, du-mă oriunde cu 9 RON!</h1>
   <div class="body-copy" id="bodyCopy"></div>
+
+  <div class="prelive-copy" id="preLiveCopy" role="status" aria-live="polite">
+    <div class="topline" id="preLiveTopline">Roata vacanțelor</div>
+    <h1 id="preLiveHeadline">Loteria nu a început încă</h1>
+    <div class="body-copy" id="preLiveBody"></div>
+  </div>
 
   <div class="stage">
     <div class="pointer"></div>
@@ -402,7 +423,12 @@
       ctaPrize: "Rezervă acum →",
       ctaCoupon: "Folosește cuponul →",
       tryAgainTitle: "Mai încearcă!",
-      tryAgainDesc: "Norocul e pe aproape — învârte roata din nou și prinde-ți vacanța!"
+      tryAgainDesc: "Norocul e pe aproape — învârte roata din nou și prinde-ți vacanța!",
+      preLiveTopline: "Roata vacanțelor",
+      preLiveHeadline: "Loteria nu a început încă",
+      preLiveBody: "Rămâi aproape — revenim în curând!",
+      preLiveSpinButton: "În curând",
+      preLiveHub: "În curând"
     },
     // 10 slots. type: "prize" (big prize + link) | "coupon" (code + link) | "tryagain" (no link).
     // Colors are by type: prize = orange, coupon = purple, tryagain = white.
@@ -421,17 +447,21 @@
   };
 
   // ───────────────────────────────────────────────────────────────────────
-  //  GOOGLE SHEET (one-time setup) — the wheel reads its prizes/texts LIVE
-  //  from a Google Sheet, so Larisa just edits the sheet and the wheel follows.
-  //  Paste the published-CSV links below. Leave "" to use DEFAULT_CONFIG above.
-  //  Get a link: Google Sheets → File → Share → Publish to web → choose the
-  //  tab → "Comma-separated values (.csv)" → Publish → copy the URL.
+  //  GOOGLE SHEET — this legacy fallback intentionally keeps its existing
+  //  published-CSV links below. Do not replace them with a new campaign Sheet.
+  //  A separate gated embed may optionally set statusUrl to a direct CSV URL:
+  //  https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=<TAB_GID>.
+  //  That Sheet must be shared as "Anyone with the link" → Viewer.
   //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link)
-  //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional
+  //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional.
+  //      Pre-live keys: preLiveTopline, preLiveHeadline, preLiveBody,
+  //      preLiveSpinButton, preLiveHub.
+  //    • Tab "Status" → statusUrl  (a single 0 before launch, or 1 when live) — optional.
   // ───────────────────────────────────────────────────────────────────────
   var SHEET = {
     prizesUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=0&single=true&output=csv",
-    textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv"
+    textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv",
+    statusUrl: ""
   };
 
   // Show ONLY the wheel (hide the heading / body / footer) — use this when you build
@@ -504,20 +534,30 @@
   var syncNotice = document.getElementById("syncNotice");
   var syncNoticeTimer = null;
 
-  function applyTexts(cfg) {
-    document.getElementById("topline").textContent = cfg.texts.topline;
-    document.getElementById("headline").textContent = cfg.texts.headline;
-    var bc = document.getElementById("bodyCopy");
-    bc.innerHTML = "";
-    String(cfg.texts.body).split("\n").forEach(function (line) {
+  function setBodyCopy(el, text) {
+    el.innerHTML = "";
+    String(text || "").split("\n").forEach(function (line) {
       if (!line.trim()) return;
       var p = document.createElement("p");
       p.textContent = line;
-      bc.appendChild(p);
+      el.appendChild(p);
     });
+  }
+
+  function applyTexts(cfg) {
+    document.getElementById("topline").textContent = cfg.texts.topline;
+    document.getElementById("headline").textContent = cfg.texts.headline;
+    setBodyCopy(document.getElementById("bodyCopy"), cfg.texts.body);
     spinBtn.textContent = cfg.texts.spinButton;
     hub.textContent = cfg.texts.hub;
     document.title = "🎡 " + cfg.texts.topline + " — Travelminit";
+  }
+
+  function applyPreLiveTexts(cfg) {
+    document.getElementById("preLiveTopline").textContent = cfg.texts.preLiveTopline || DEFAULT_CONFIG.texts.preLiveTopline;
+    document.getElementById("preLiveHeadline").textContent = cfg.texts.preLiveHeadline || DEFAULT_CONFIG.texts.preLiveHeadline;
+    setBodyCopy(document.getElementById("preLiveBody"), cfg.texts.preLiveBody || DEFAULT_CONFIG.texts.preLiveBody);
+    document.title = "🎡 " + (cfg.texts.preLiveTopline || DEFAULT_CONFIG.texts.preLiveTopline) + " — Travelminit";
   }
 
   function colorFor(type) {
@@ -528,6 +568,7 @@
 
   // ---------- Build the wheel ----------
   function buildWheel(cfg) {
+    wheel.setAttribute("aria-label", "Roata vacanțelor");
     SEGMENTS = cfg.slots.length;
     ANGLE = 360 / SEGMENTS;
     var svg = "";
@@ -560,6 +601,26 @@
     wheel.innerHTML = svg;
   }
 
+  // A deliberately non-interactive wheel for Status = 0. It never uses the
+  // live prize labels, so publishing the iframe early cannot reveal a prize.
+  function buildPreLiveWheel() {
+    var n = 10, ang = 360 / n, svg = "";
+    var icons = ["?", "✦", "?", "✦", "?", "✦", "?", "✦", "?", "✦"];
+    wheel.setAttribute("aria-label", "Roata vacanțelor — loteria nu a început încă");
+    for (var k = 0; k < n; k++) {
+      var col = k % 2 === 0 ? ORANGE : PURPLE;
+      var start = k * ang, end = (k + 1) * ang;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 0 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + col + '" opacity="0.72" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+      var ep = pt(start + ang / 2, 132);
+      svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="30" font-weight="900" fill="#ffffff" opacity="0.82" font-family="Poppins, sans-serif">' + icons[k] + '</text>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
   // ---------- Skeleton wheel (placeholder shown instantly while the sheet loads) ----------
   function buildSkeleton() {
     var n = 10, ang = 36, svg = "";
@@ -583,15 +644,85 @@
   var spinning = false;
   var preparingSpin = false;
   var currentRotation = 0;
+  var campaignLive = true;
+  var statusGateEnabled = false;
+  // Every status/prizes read gets a monotonically increasing serial. A late
+  // background response must never overwrite a newer strict pre-spin result.
+  var campaignStateRequestSerial = 0;
+  var lastAppliedCampaignStateSerial = 0;
 
   function setDisabled(d) {
     hub.disabled = d; spinBtn.disabled = d;
+    if (!campaignLive) {
+      hub.textContent = config.texts.preLiveHub || DEFAULT_CONFIG.texts.preLiveHub;
+      spinBtn.textContent = config.texts.preLiveSpinButton || DEFAULT_CONFIG.texts.preLiveSpinButton;
+      return;
+    }
     hub.textContent = d ? "..." : config.texts.hub;
+  }
+
+  function resetWheelRotation() {
+    currentRotation = 0;
+    wheel.style.transition = "none";
+    wheel.style.transform = "rotate(0deg)";
+    void wheel.offsetWidth;
+    wheel.style.transition = "";
+  }
+
+  function enterPreLiveMode() {
+    campaignLive = false;
+    document.body.classList.add("pre-live");
+    result.classList.remove("show", "win");
+    rCoupon.style.display = "none";
+    rCta.removeAttribute("href");
+    applyPreLiveTexts(config);
+    resetWheelRotation();
+    buildPreLiveWheel();
+    setDisabled(true);
+  }
+
+  function acceptCampaignStateSerial(serial) {
+    if (typeof serial !== "number") return true;
+    if (serial < lastAppliedCampaignStateSerial) return false;
+    lastAppliedCampaignStateSerial = serial;
+    return true;
+  }
+
+  function applyCampaignState(state, options) {
+    options = options || {};
+    if (!acceptCampaignStateSerial(state && state.campaignStateRequestSerial)) return false;
+    if (!state || !state.live) {
+      enterPreLiveMode();
+      applyPendingTextsIfIdle();
+      return false;
+    }
+
+    var wasPreLive = !campaignLive;
+    campaignLive = true;
+    document.body.classList.remove("pre-live");
+    // A status/prizes request captures the texts that existed when it began.
+    // Keep the newest independently fetched Texts snapshot instead, otherwise
+    // a late prize response could roll its copy back.
+    var nextConfig = deepCopy(state.config);
+    nextConfig.texts = deepCopy(config.texts);
+    var changed = !sameConfig(nextConfig, config);
+    config = nextConfig;
+    if (wasPreLive) resetWheelRotation();
+    if (wasPreLive || changed) {
+      applyTexts(config);
+      buildWheel(config);
+    }
+    if (!options.keepControlsDisabled && !spinning && !preparingSpin) setDisabled(false);
+    applyPendingTextsIfIdle();
+    // Callers use this as an acceptance result, not as a "did the screen
+    // change" result. A current live snapshot is always safe to spin from.
+    return true;
   }
 
   function spin() {
     if (spinning || preparingSpin) return;
     if (hub.disabled || spinBtn.disabled) return;
+    if (!campaignLive) return;
     if (!SHEET.prizesUrl) { startSpin(); return; }
     preparingSpin = true;
     setDisabled(true);
@@ -599,14 +730,28 @@
     // Choose a segment only after this click's own strict live read succeeds.
     // It must not reuse the focus/60-second background request: that request
     // may already be a few seconds old when the player clicks Spin.
-    getFreshConfigForSpin().then(function (freshConfig) {
-      applyConfigIfChanged(freshConfig);
+    getFreshCampaignStateForSpin().then(function (state) {
       preparingSpin = false;
+      if (!state.live) {
+        applyCampaignState(state);
+        return;
+      }
+      // Do not draw if this response lost to a newer accepted state. This is
+      // normally impossible while preparingSpin is true, but keeps the guard
+      // correct if an event is delivered just as the request completes.
+      if (!applyCampaignState(state, { keepControlsDisabled: true })) return;
       startSpin();
-    }, function () {
+    }, function (error) {
       preparingSpin = false;
-      setDisabled(false);
-      showSyncNotice();
+      // With a Status URL configured, an unreadable status must fail closed:
+      // showing a harmless placeholder is safer than drawing a stale prize.
+      if (statusGateEnabled) {
+        if (acceptCampaignStateSerial(error && error.campaignStateRequestSerial)) enterPreLiveMode();
+      } else {
+        setDisabled(false);
+        showSyncNotice();
+      }
+      applyPendingTextsIfIdle();
     });
   }
 
@@ -636,6 +781,7 @@
       spinning = false;
       setDisabled(false);
       showResult(slot);
+      applyPendingTextsIfIdle();
     }
     wheel.addEventListener("transitionend", reveal, { once: true });
     setTimeout(reveal, 6800);
@@ -938,60 +1084,125 @@
       topline: "topline", headline: "headline", buton: "spinButton", spinbutton: "spinButton",
       centru: "hub", hub: "hub", ctapremiu: "ctaPrize", ctaprize: "ctaPrize",
       ctacupon: "ctaCoupon", ctacoupon: "ctaCoupon", tryagaintitle: "tryAgainTitle",
-      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc"
+      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc",
+      prelivetopline: "preLiveTopline", preliveheadline: "preLiveHeadline", prelivebody: "preLiveBody",
+      prelivespinbutton: "preLiveSpinButton", prelivehub: "preLiveHub"
     };
     Object.keys(map).forEach(function (k) { if (keymap[k] && map[k] !== "") texts[keymap[k]] = map[k]; });
     var parts = [map.body1, map.body2, map.body3].filter(Boolean);
     if (parts.length) texts.body = parts.join("\n");
     else if (map.body) texts.body = map.body;
   }
-  function resolveOptionalText(textPromise, waitMs) {
-    if (!waitMs) return textPromise;
-    return new Promise(function (resolve) {
-      var timer = setTimeout(function () { resolve(null); }, waitMs);
-      textPromise.then(function (text) {
-        clearTimeout(timer);
-        resolve(text);
-      }, function () {
-        clearTimeout(timer);
-        resolve(null);
+  function statusValue(value) {
+    var v = String(value == null ? "" : value).trim();
+    if (v === "0") return false;
+    if (v === "1") return true;
+    return null;
+  }
+  function parseCampaignStatus(text) {
+    var rows = parseCSV(text);
+    if (!rows.length) throw new Error("Statusul campaniei este gol");
+    var statusColumn = colIndex(rows[0], ["status", "live", "islive", "campaignstatus"]);
+    var r, c, value;
+    if (statusColumn >= 0) {
+      for (r = 1; r < rows.length; r++) {
+        value = statusValue(rows[r][statusColumn]);
+        if (value !== null) return value;
+      }
+    } else {
+      for (r = 0; r < rows.length; r++) {
+        for (c = 0; c < rows[r].length; c++) {
+          value = statusValue(rows[r][c]);
+          if (value !== null) return value;
+        }
+      }
+    }
+    throw new Error("Statusul campaniei trebuie să fie 0 sau 1");
+  }
+  function loadCampaignState(options) {
+    options = options || {};
+    var cfg = deepCopy(options.baseConfig || config || DEFAULT_CONFIG);
+    // Start both reads together. Status 0 returns immediately after its own
+    // response, while Status 1 also requires a valid current Prizes response.
+    var statusRequest = SHEET.statusUrl ? fetchCSV(SHEET.statusUrl, options.signal).then(parseCampaignStatus) : Promise.resolve(true);
+    var prizesRequest = SHEET.prizesUrl ? fetchCSV(SHEET.prizesUrl, options.signal).then(function (text) {
+      return { text: text };
+    }, function (error) {
+      return { error: error };
+    }) : Promise.resolve({ error: new Error("Lipsește URL-ul pentru premii") });
+
+    return statusRequest.then(function (isLive) {
+      if (!isLive) return { live: false, config: cfg };
+      return prizesRequest.then(function (response) {
+        if (response.error) throw response.error;
+        var slots = rowsToSlots(parseCSV(response.text));
+        if (slots.length < 2) {
+          if (options.requireLivePrizes) throw new Error("Configurația live nu conține suficiente premii");
+          return { live: true, config: cfg };
+        }
+        cfg.slots = slots;
+        return { live: true, config: cfg };
       });
     });
   }
-  function loadFromSheet(options) {
-    options = options || {};
-    var pPrizes = fetchCSV(SHEET.prizesUrl, options.signal);
-    var pTexts = null;
-    if (SHEET.textsUrl && options.loadTexts !== false) {
-      pTexts = resolveOptionalText(fetchCSV(SHEET.textsUrl, options.signal).catch(function () { return null; }), options.textWaitMs);
+
+  // Texts are presentation only. Background refreshes fetch them separately,
+  // so a slow Texts tab can never delay a status/prize decision or a spin.
+  var textRefreshSerial = 0;
+  var pendingTexts = null;
+
+  function applyTextsSnapshot(nextTexts) {
+    config.texts = nextTexts;
+    if (campaignLive) applyTexts(config);
+    else {
+      applyPreLiveTexts(config);
+      setDisabled(true);
     }
-    return pPrizes.then(function (prizesText) {
-      // Pre-spin checks preserve the latest already-rendered text. Text is not
-      // an inventory decision and must never hold up a live prize check.
-      var cfg = deepCopy(options.baseConfig || DEFAULT_CONFIG);
-      var slots = rowsToSlots(parseCSV(prizesText));
-      if (options.requireLivePrizes && slots.length < 2) throw new Error("Configurația live nu conține suficiente premii");
-      if (slots.length >= 2) cfg.slots = slots;
-      if (!pTexts) return cfg;
-      return pTexts.then(function (textsText) {
-        if (textsText) applyTextsCSV(cfg.texts, parseCSV(textsText));
-        return cfg;
-      });
-    });
+  }
+
+  function applyPendingTextsIfIdle() {
+    if (!pendingTexts || spinning || preparingSpin) return;
+    var nextTexts = pendingTexts;
+    pendingTexts = null;
+    applyTextsSnapshot(nextTexts);
+  }
+
+  function refreshTextsAsync() {
+    if (!SHEET.textsUrl) return;
+    var serial = ++textRefreshSerial;
+    fetchCSV(SHEET.textsUrl).then(function (text) {
+      if (serial !== textRefreshSerial) return;
+      // If another response is already queued during a spin, build on that
+      // newer snapshot rather than dropping fields it supplied.
+      var nextTexts = deepCopy(pendingTexts || config.texts);
+      applyTextsCSV(nextTexts, parseCSV(text));
+      // Copy is not allowed to reflow the page or change a result while the
+      // player is preparing / watching a spin. Keep it for the first idle tick.
+      if (spinning || preparingSpin) {
+        pendingTexts = nextTexts;
+        return;
+      }
+      applyTextsSnapshot(nextTexts);
+    }).catch(function () {});
   }
 
   // ---------- Init ----------
   var qp = new URLSearchParams(location.search);
   if (qp.get("prizes")) SHEET.prizesUrl = qp.get("prizes");
   if (qp.get("texts")) SHEET.textsUrl = qp.get("texts");
+  if (qp.get("status")) SHEET.statusUrl = qp.get("status");
+  // The editor is an internal preview: it deliberately bypasses the public
+  // release gate so it remains usable while the campaign is pre-live.
+  statusGateEnabled = !!SHEET.statusUrl && !qp.has("edit");
   if (qp.has("bare") || BARE) document.body.classList.add("bare");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
 
   if (qp.has("edit")) {
+    campaignLive = true;
     render(config);
     initEditor();
-  } else if (SHEET.prizesUrl) {
+  } else if (SHEET.prizesUrl || statusGateEnabled) {
     // Show the wheel instantly with shimmering placeholders, then fade in the real
     // content once the sheet loads — and only then enable the buttons.
     buildSkeleton();
@@ -999,17 +1210,32 @@
     hub.disabled = true;
     spinBtn.disabled = true;
     var settled = false;
-    function settle(cfg) {
+    function settle(state) {
       if (settled) return;
       settled = true;
-      if (cfg) config = cfg;
 
       // FLIP: record where the wheel / button / footer sit now (skeleton layout)
       var movers = [document.querySelector(".stage"), spinBtn, document.querySelector("footer")].filter(Boolean);
       var firstTop = movers.map(function (el) { return el.getBoundingClientRect().top; });
 
-      applyTexts(config);                       // header text fills in → its height changes
-      buildWheel(config);
+      if (state && state.live) {
+        campaignLive = true;
+        document.body.classList.remove("pre-live");
+        // The Prizes request may have started before an independent Texts
+        // refresh. Preserve that newer copy when its slot snapshot lands.
+        var initialConfig = deepCopy(state.config);
+        initialConfig.texts = deepCopy(config.texts);
+        config = initialConfig;
+        applyTexts(config);                     // header text fills in → its height changes
+        buildWheel(config);
+      } else if (statusGateEnabled) {
+        enterPreLiveMode();
+      } else {
+        campaignLive = true;
+        document.body.classList.remove("pre-live");
+        applyTexts(config);
+        buildWheel(config);
+      }
 
       // ...then glide them from the old position to the new one instead of jumping
       var deltas = movers.map(function (el, i) { return firstTop[i] - el.getBoundingClientRect().top; });
@@ -1032,9 +1258,21 @@
       void wheel.offsetWidth;                   // restart the wheel fade-in
       wheel.style.animation = "tmfadein 0.4s ease";
       document.body.classList.remove("skeleton");
-      setDisabled(false);                       // enable the buttons
+      setDisabled(!campaignLive);
     }
-    loadFromSheet().then(settle).catch(function () { settle(null); });
+    var initialCampaignStateSerial = ++campaignStateRequestSerial;
+    loadCampaignState({ baseConfig: config, requireLivePrizes: statusGateEnabled }).then(function (state) {
+      state.campaignStateRequestSerial = initialCampaignStateSerial;
+      if (settled) applyCampaignState(state);
+      else settle(state);
+      refreshTextsAsync();
+    }, function (error) {
+      error = error || {};
+      error.campaignStateRequestSerial = initialCampaignStateSerial;
+      if (!settled) settle(null);
+      else if (statusGateEnabled && acceptCampaignStateSerial(error.campaignStateRequestSerial)) enterPreLiveMode();
+      refreshTextsAsync();
+    });
     setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
   } else {
     render(config);
@@ -1049,21 +1287,14 @@
   // heartbeat, so a long-open session never serves stale prizes. Every actual spin
   // also makes a strict live request before its winning segment is selected.
   var LIVE_CONFIG_TIMEOUT_MS = 3500;
-  var liveConfigRequest = null;
+  var liveCampaignRequest = null;
   var lastBackgroundRefresh = 0;
 
   function sameConfig(a, b) {
     return JSON.stringify([a.slots, a.texts]) === JSON.stringify([b.slots, b.texts]);
   }
-  function applyConfigIfChanged(nextConfig) {
-    if (sameConfig(nextConfig, config)) return false;
-    config = nextConfig;
-    applyTexts(config);
-    buildWheel(config);
-    return true;
-  }
-  function requestLiveConfig(options) {
-    options = options || {};
+  function requestLiveCampaignState() {
+    var requestSerial = ++campaignStateRequestSerial;
     var controller = typeof AbortController === "function" ? new AbortController() : null;
     var timeoutId;
     var timeout = new Promise(function (_, reject) {
@@ -1072,51 +1303,61 @@
         reject(new Error("Actualizarea premiilor a expirat"));
       }, LIVE_CONFIG_TIMEOUT_MS);
     });
-    var request = loadFromSheet({
+    var request = loadCampaignState({
       signal: controller ? controller.signal : null,
       requireLivePrizes: true,
-      loadTexts: options.loadTexts !== false,
-      textWaitMs: options.textWaitMs,
       baseConfig: config
     });
-    return Promise.race([request, timeout]).then(function (cfg) {
+    return Promise.race([request, timeout]).then(function (state) {
       clearTimeout(timeoutId);
-      return cfg;
+      state.campaignStateRequestSerial = requestSerial;
+      return state;
     }, function (error) {
       clearTimeout(timeoutId);
+      // Preserve the serial on failures as well: an older failed background
+      // read must not force pre-live after a newer strict result was accepted.
+      throw { campaignStateRequestSerial: requestSerial, cause: error };
+    });
+  }
+  function getFreshCampaignState() {
+    if (liveCampaignRequest) return liveCampaignRequest;
+    liveCampaignRequest = requestLiveCampaignState();
+    return liveCampaignRequest.then(function (state) {
+      liveCampaignRequest = null;
+      return state;
+    }, function (error) {
+      liveCampaignRequest = null;
       throw error;
     });
   }
-  function getFreshConfig() {
-    if (liveConfigRequest) return liveConfigRequest;
-    // Text updates are useful but non-critical. Do not let a slow optional
-    // Texts tab prevent the active wheel from getting the latest prizes.
-    liveConfigRequest = requestLiveConfig({ loadTexts: true, textWaitMs: 400 });
-    return liveConfigRequest.then(function (cfg) {
-      liveConfigRequest = null;
-      return cfg;
-    }, function (error) {
-      liveConfigRequest = null;
-      throw error;
-    });
-  }
-  function getFreshConfigForSpin() {
+  function getFreshCampaignStateForSpin() {
     // Deliberately do not share the background request. A spin must initiate
-    // its own cache-busted read of the Prizes CSV immediately before selection.
-    return requestLiveConfig({ loadTexts: false });
+    // its own cache-busted Status + Prizes reads immediately before selection.
+    return requestLiveCampaignState();
   }
   function refreshIfIdle(force) {
     if (document.visibilityState !== "visible") return;
-    if (spinning || preparingSpin || result.classList.contains("show")) return;
+    if (spinning || preparingSpin) return;
     var now = Date.now();
     if (now - lastBackgroundRefresh < 1000) return;                // focus and visibility often arrive together
     lastBackgroundRefresh = now;
-    getFreshConfig().then(function (cfg) {
-      if (spinning || preparingSpin || result.classList.contains("show")) return;
-      applyConfigIfChanged(cfg);
-    }).catch(function () {});
+    refreshTextsAsync();
+    getFreshCampaignState().then(function (state) {
+      if (spinning || preparingSpin) return;
+      applyCampaignState(state);
+    }).catch(function (error) {
+      // A configured Status URL is a release safety gate. If it cannot be
+      // read, stay on the harmless placeholder rather than keep a live draw.
+      // Never disrupt an in-progress or pre-spin interaction. Also reject a
+      // late failure if a newer Status/Prizes result has already been applied.
+      if (spinning || preparingSpin) return;
+      if (statusGateEnabled && acceptCampaignStateSerial(error && error.campaignStateRequestSerial)) {
+        enterPreLiveMode();
+        applyPendingTextsIfIdle();
+      }
+    });
   }
-  if (SHEET.prizesUrl) {
+  if (SHEET.prizesUrl || statusGateEnabled) {
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") refreshIfIdle(true);
     });

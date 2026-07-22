@@ -4,14 +4,15 @@ set -euo pipefail
 # Creates one immutable, deployable HTML address for a Travelminit campaign
 # and prints the exact Wix URL plus an iframe fallback.
 
-if [ "$#" -ne 3 ]; then
-  printf 'Usage: bash scripts/create-travelminit-release.sh <release-id> <prizes-csv-url> <texts-csv-url>\n' >&2
+if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+  printf 'Usage: bash scripts/create-travelminit-release.sh <release-id> <prizes-csv-url> <texts-csv-url> [status-csv-url]\n' >&2
   exit 64
 fi
 
 release_id="$1"
 prizes_url="$2"
 texts_url="$3"
+status_url="${4:-}"
 
 case "$release_id" in
   ''|*[!a-zA-Z0-9._-]*)
@@ -36,6 +37,16 @@ case "$texts_url" in
     ;;
 esac
 
+if [ -n "$status_url" ]; then
+  case "$status_url" in
+    https://*) ;;
+    *)
+      printf 'Status URL must start with https://\n' >&2
+      exit 64
+      ;;
+  esac
+fi
+
 release_dir="releases/$release_id"
 if [ -e "$release_dir" ]; then
   printf 'Release already exists: %s\n' "$release_dir" >&2
@@ -45,7 +56,7 @@ fi
 mkdir -p "$release_dir"
 cp travelminit-new.html "$release_dir/travelminit.html"
 
-python3 - "$release_dir/travelminit.html" "$prizes_url" "$texts_url" <<'PY'
+python3 - "$release_dir/travelminit.html" "$prizes_url" "$texts_url" "$status_url" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -53,10 +64,12 @@ from pathlib import Path
 release_file = Path(sys.argv[1])
 prizes_url = sys.argv[2]
 texts_url = sys.argv[3]
+status_url = sys.argv[4]
 source = release_file.read_text(encoding="utf-8")
 replacements = {
     'prizesUrl: ""': 'prizesUrl: ' + json.dumps(prizes_url),
     'textsUrl: ""': 'textsUrl: ' + json.dumps(texts_url),
+    'statusUrl: ""': 'statusUrl: ' + json.dumps(status_url),
 }
 
 for needle, replacement in replacements.items():

@@ -17,7 +17,7 @@
 <!--
   ┌──────────────────────────────────────────────────────────────────────┐
   │  EDITOR: local preview only — never use ?edit or #cfg in a campaign.   │
-  │  The public wheel reads two live, cache-busted CSV tabs configured      │
+  │  The public wheel reads three live, cache-busted CSV tabs configured    │
   │  below.                                                                 │
   └──────────────────────────────────────────────────────────────────────┘
 -->
@@ -257,6 +257,12 @@
   .topline, h1, .body-copy { transition: opacity 0.35s ease; }
   body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
   body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
+  /* The optional Status tab can keep the campaign safely pre-live. It is a
+     real placeholder screen, not an error state: show a mock wheel and the
+     campaign-provided Romanian copy, but never expose a spin control. */
+  body.prelive .spin-btn { display: none; }
+  body.prelive .hub { cursor: default; opacity: 0.8; }
+  body.prelive .hub:hover, body.prelive .hub:active { transform: translate(-50%, -50%); }
   .load-status {
     display: none;
     max-width: 420px;
@@ -324,6 +330,8 @@
   /* Wheel-only mode (?bare=1 or BARE=true): hide page text/footer, embed just the wheel as a box */
   body.bare { padding-top: 14px; }
   body.bare .topline, body.bare h1, body.bare .body-copy, body.bare footer { display: none; }
+  /* In pre-live mode the message must remain visible even inside Wix's bare iframe. */
+  body.bare.prelive .topline, body.bare.prelive h1, body.bare.prelive .body-copy { display: block; }
 
   /* ---------- Mobile: compact the header so the wheel + button fit ---------- */
   @media (max-width: 480px) {
@@ -423,23 +431,43 @@
     ]
   };
 
+  // Used only while the optional Status tab is 0. These values are safe
+  // fallbacks; a Texts tab can override them with preLiveTopline,
+  // preLiveHeadline and preLiveBody without affecting the live copy.
+  var PRELIVE_TEXTS = {
+    topline: "Roata vacanțelor",
+    headline: "Loteria nu a început încă",
+    body: "Rămâi aproape — revenim în curând!",
+    spinButton: "În curând",
+    hub: "În curând"
+  };
+  var PRELIVE_SLOTS = [
+    { type: "prize", icon: "✈️", label: "În curând" },
+    { type: "coupon", icon: "🎁", label: "În curând" },
+    { type: "tryagain", icon: "⏳", label: "În curând" },
+    { type: "prize", icon: "🏖️", label: "În curând" },
+    { type: "coupon", icon: "🧳", label: "În curând" },
+    { type: "tryagain", icon: "✨", label: "În curând" }
+  ];
+
   // ───────────────────────────────────────────────────────────────────────
-  //  GOOGLE SHEET — the campaign reads two live, auto-republished CSV tabs.
-  //  A release receives their URLs once, then the campaign team edits only
-  //  the Sheet. Every request has a cache-buster, so an old browser/CDN copy
-  //  cannot keep the old data after Google has republished it.
+  //  GOOGLE SHEET — the campaign reads live direct-CSV tabs. A release
+  //  receives their URLs once, then the campaign team edits only the Sheet.
+  //  Every request has a cache-buster, so an old browser/CDN copy cannot
+  //  keep old data. No "Publish to web" auto-republish delay is involved.
   //  This source file intentionally has no fallback link to the legacy Sheet.
-  //  Get a link: Google Sheets → File → Share → Publish to web → choose the
-  //  tab → "Comma-separated values (.csv)" → Publish → copy the URL.
+  //  Share the Sheet as "Anyone with the link" → Viewer and use a URL like
+  //  https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=<TAB_GID>.
   //    • Tab "Prizes" → prizesUrl (type, icon, label, title, description, coupon, url)
   //    • Tab "Texts"  → textsUrl  (key, value)
-  //    • Publish each tab once with "Automatically republish when changes are made" enabled.
+  //    • Tab "Status" → statusUrl (one value: 0 = pre-live, 1 = live)
   // ───────────────────────────────────────────────────────────────────────
   var SHEET = {
     prizesUrl: "",
     textsUrl: "",
+    statusUrl: "",
     // Reserved for a future versioned configuration mode. New campaign
-    // releases intentionally leave this empty and use the two live CSV tabs.
+    // releases intentionally leave this empty and use the three live CSV tabs.
     manifestUrl: ""
   };
 
@@ -515,21 +543,36 @@
   var loadStatus = document.getElementById("loadStatus");
   var syncDebug = document.getElementById("syncDebug");
 
-  function applyTexts(cfg) {
-    document.getElementById("topline").textContent = cfg.texts.topline;
-    document.getElementById("headline").textContent = cfg.texts.headline;
+  function applyPageTexts(texts) {
+    document.getElementById("topline").textContent = texts.topline;
+    document.getElementById("headline").textContent = texts.headline;
     var bc = document.getElementById("bodyCopy");
     bc.innerHTML = "";
-    String(cfg.texts.body).split("\n").forEach(function (line) {
+    String(texts.body).split("\n").forEach(function (line) {
       if (!line.trim()) return;
       var p = document.createElement("p");
       p.textContent = line;
       bc.appendChild(p);
     });
-    spinBtn.textContent = cfg.texts.spinButton;
-    hub.textContent = cfg.texts.hub;
-    document.title = "🎡 " + cfg.texts.topline + " — Travelminit";
+    spinBtn.textContent = texts.spinButton;
+    hub.textContent = texts.hub;
+    document.title = "🎡 " + texts.topline + " — Travelminit";
   }
+
+  function applyTexts(cfg) { applyPageTexts(cfg.texts); }
+
+  function preLiveTexts(texts) {
+    texts = texts || {};
+    return {
+      topline: texts.preLiveTopline || PRELIVE_TEXTS.topline,
+      headline: texts.preLiveHeadline || PRELIVE_TEXTS.headline,
+      body: texts.preLiveBody || PRELIVE_TEXTS.body,
+      spinButton: texts.preLiveSpinButton || PRELIVE_TEXTS.spinButton,
+      hub: texts.preLiveHub || PRELIVE_TEXTS.hub
+    };
+  }
+
+  function applyPreLiveTexts(texts) { applyPageTexts(preLiveTexts(texts)); }
 
   function colorFor(type) {
     if (type === "tryagain") return { fill: WHITE, text: PURPLE };
@@ -571,6 +614,8 @@
     wheel.innerHTML = svg;
   }
 
+  function buildPreLiveWheel() { buildWheel({ slots: PRELIVE_SLOTS }); }
+
   // ---------- Skeleton wheel (placeholder shown instantly while the sheet loads) ----------
   function buildSkeleton() {
     var n = 10, ang = 36, svg = "";
@@ -594,8 +639,17 @@
   var spinning = false;
   var preparingSpin = false;
   var currentRotation = 0;
+  var directPreLive = false;
 
   function setDisabled(d) {
+    if (directPreLive && !SHEET.manifestUrl) {
+      var placeholderCopy = preLiveTexts(directTexts);
+      hub.disabled = true;
+      spinBtn.disabled = true;
+      hub.textContent = placeholderCopy.hub;
+      spinBtn.textContent = placeholderCopy.spinButton;
+      return;
+    }
     hub.disabled = d; spinBtn.disabled = d;
     hub.textContent = d ? "..." : (config ? config.texts.hub : "Învârte");
   }
@@ -604,26 +658,35 @@
     if (spinning || preparingSpin) return;
     if (hub.disabled || spinBtn.disabled) return;
     if (typeof applyPendingSnapshot === "function") applyPendingSnapshot();
+    if (typeof applyPendingDirectTexts === "function") applyPendingDirectTexts();
     if (!config || (typeof refreshRequired !== "undefined" && refreshRequired)) {
       setDisabled(true);
       return;
     }
 
-    // Direct CSV releases do one independent, cache-busted Prizes read before
-    // choosing a segment. Do not reuse a focus/heartbeat request: it may have
-    // started before the player clicked. Manifest releases keep their existing
-    // atomic manifest + snapshot flow below.
+    // Direct CSV releases independently re-check Status and Prizes before
+    // choosing a segment. Texts intentionally stay out of this critical path.
+    // Manifest releases keep their existing atomic manifest + snapshot flow.
     if (!SHEET.manifestUrl && SHEET.prizesUrl) {
       preparingSpin = true;
       setDisabled(true);
-      fetchFreshDirectPrizesForSpin().then(function (slots) {
-        applyFreshDirectPrizes(slots);
+      fetchFreshDirectStateForSpin().then(function (outcome) {
+        // A newer strict read is authoritative. An older failed request must
+        // never turn a subsequently refreshed live wheel back into pre-live.
+        if (!isCurrentDirectEpoch(outcome.epoch)) return;
         preparingSpin = false;
+        if (outcome.error) {
+          if (failClosedDirectRequest(outcome.epoch)) return;
+          setDisabled(false);
+          setLoadStatus("Premiile se actualizează. Încearcă din nou în câteva secunde.", true);
+          return;
+        }
+        if (!outcome.state.live) {
+          enterPreLiveForDirectEpoch(outcome.epoch);
+          return;
+        }
+        applyFreshDirectPrizes(outcome.state.slots);
         startSpin();
-      }, function () {
-        preparingSpin = false;
-        setDisabled(false);
-        setLoadStatus("Premiile se actualizează. Încearcă din nou în câteva secunde.", true);
       });
       return;
     }
@@ -953,7 +1016,9 @@
       topline: "topline", headline: "headline", buton: "spinButton", spinbutton: "spinButton",
       centru: "hub", hub: "hub", ctapremiu: "ctaPrize", ctaprize: "ctaPrize",
       ctacupon: "ctaCoupon", ctacoupon: "ctaCoupon", tryagaintitle: "tryAgainTitle",
-      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc"
+      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc",
+      prelivetopline: "preLiveTopline", preliveheadline: "preLiveHeadline", prelivebody: "preLiveBody",
+      prelivespinbutton: "preLiveSpinButton", prelivehub: "preLiveHub"
     };
     var texts = {};
     Object.keys(map).forEach(function (k) { if (keymap[k] && map[k] !== "") texts[keymap[k]] = map[k]; });
@@ -1000,27 +1065,129 @@
       });
     });
   }
-  function fetchLegacySnapshot() {
-    return Promise.all([fetchCSV(SHEET.prizesUrl), fetchCSV(SHEET.textsUrl)]).then(function (res) {
-      return {
-        manifest: { revision: 0, prizesUrl: SHEET.prizesUrl, textsUrl: SHEET.textsUrl, publishedAt: "legacy" },
-        config: configFromCSV(res[0], res[1]),
-        syncedAt: new Date()
-      };
+
+  // ---------- Direct CSV mode (the current campaign default) ----------
+  // A direct release is deliberately split into three independent reads:
+  // Status + Prizes decide whether a player may spin; Texts only update copy.
+  // This keeps a slow Texts tab from ever delaying or weakening prize safety.
+  function parseDirectStatus(csv) {
+    var rows = parseCSV(csv);
+    if (!rows.length) throw new Error("Lipsește statusul campaniei");
+    var statusColumn = colIndex(rows[0], ["status", "live", "islive", "active", "activ"]);
+    var value;
+    if (statusColumn >= 0) {
+      if (rows.length < 2) throw new Error("Lipsește valoarea statusului campaniei");
+      value = cell(rows[1], statusColumn);
+    } else {
+      var values = [];
+      rows.forEach(function (row) {
+        row.forEach(function (item) {
+          item = String(item).trim();
+          if (item) values.push(item);
+        });
+      });
+      if (values.length !== 1) throw new Error("Statusul campaniei trebuie să conțină o singură valoare");
+      value = values[0];
+    }
+    if (value === "0") return false;
+    if (value === "1") return true;
+    throw new Error("Statusul campaniei trebuie să fie 0 sau 1");
+  }
+  function fetchDirectStatus(signal) {
+    // Omitting a Status URL preserves older direct releases: they are live.
+    if (!SHEET.statusUrl) return Promise.resolve(true);
+    return fetchCSV(SHEET.statusUrl, signal).then(parseDirectStatus);
+  }
+  function fetchDirectPrizes(signal) {
+    return fetchCSV(SHEET.prizesUrl, signal).then(function (csv) {
+      var slots = rowsToSlots(parseCSV(csv));
+      if (slots.length < 2) throw new Error("Configurația live nu conține suficiente premii");
+      return slots;
     });
+  }
+
+  var directTexts = deepCopy(DEFAULT_CONFIG.texts);
+  var directTextsInFlight = false;
+  var pendingDirectTexts = null;
+
+  function mergeDirectTexts(texts) {
+    var merged = deepCopy(DEFAULT_CONFIG.texts);
+    Object.keys(texts || {}).forEach(function (key) { merged[key] = texts[key]; });
+    return merged;
+  }
+  function applyDirectTextsNow(texts) {
+    if (!config) return;
+    var nextConfig = deepCopy(config);
+    nextConfig.texts = deepCopy(texts);
+    config = nextConfig;
+    if (activeSnapshot) activeSnapshot.config = nextConfig;
+    applyTexts(config);
+  }
+  function applyPendingDirectTexts() {
+    if (!pendingDirectTexts || spinning || preparingSpin || directPreLive) return;
+    var texts = pendingDirectTexts;
+    pendingDirectTexts = null;
+    applyDirectTextsNow(texts);
+  }
+  function refreshDirectTexts() {
+    if (!SHEET.textsUrl || directTextsInFlight) return;
+    directTextsInFlight = true;
+    fetchCSV(SHEET.textsUrl).then(function (csv) {
+      return mergeDirectTexts(textsFromRows(parseCSV(csv)));
+    }).then(function (texts) {
+      directTexts = texts;
+      if (directPreLive) {
+        applyPreLiveTexts(directTexts);
+        setDisabled(true);
+      } else if (spinning || preparingSpin) {
+        pendingDirectTexts = directTexts;
+      } else {
+        applyDirectTextsNow(directTexts);
+      }
+    }, function () {
+      // Copy is non-critical. Keep the last known valid Texts value without
+      // changing spin availability or showing an alarming user-facing error.
+    }).then(function () {
+      directTextsInFlight = false;
+    });
+  }
+  function directSnapshot(slots) {
+    return {
+      manifest: { revision: 0, prizesUrl: SHEET.prizesUrl, textsUrl: SHEET.textsUrl, publishedAt: "live" },
+      config: { slots: slots, texts: deepCopy(directTexts) },
+      syncedAt: new Date()
+    };
+  }
+  function fetchDirectPrizesSnapshot(signal) {
+    return fetchDirectPrizes(signal).then(directSnapshot);
   }
   function fetchCurrentSnapshot() {
     if (SHEET.manifestUrl) return fetchManifest().then(fetchStableSnapshot);
-    return fetchLegacySnapshot();
+    return fetchDirectPrizesSnapshot();
   }
 
-  // Direct CSV releases must not let a slow Texts request delay a prize draw.
-  // This is deliberately separate from requestRefresh(), which may be up to a
-  // minute old when the player presses Spin.
+  // The fresh pre-spin check has one deadline for both critical reads. Prizes
+  // are started in parallel, while a 0 Status result can still immediately
+  // switch to the safe pre-live screen even if Prizes is blank or unavailable.
   var DIRECT_PRIZES_TIMEOUT_MS = 3500;
   var directPrizesEpoch = 0;
-  function fetchFreshDirectPrizesForSpin() {
-    ++directPrizesEpoch;
+  function isCurrentDirectEpoch(epoch) { return epoch === directPrizesEpoch; }
+  function enterPreLiveForDirectEpoch(epoch) {
+    if (!isCurrentDirectEpoch(epoch)) return false;
+    enterPreLive();
+    return true;
+  }
+  function failClosedDirectRequest(epoch) {
+    // Status is an explicit campaign safety gate. Once it is configured, an
+    // unreadable Status or Prizes tab must disable the live wheel. The epoch
+    // check prevents a late failure from an older request replacing newer data.
+    if (!SHEET.statusUrl || !isCurrentDirectEpoch(epoch)) return false;
+    enterPreLive();
+    scheduleRetry();
+    return true;
+  }
+  function fetchFreshDirectStateForSpin() {
+    var directEpoch = ++directPrizesEpoch;
     var controller = typeof AbortController === "function" ? new AbortController() : null;
     var timeoutId;
     var timeout = new Promise(function (_, reject) {
@@ -1029,25 +1196,34 @@
         reject(new Error("Actualizarea premiilor a expirat"));
       }, DIRECT_PRIZES_TIMEOUT_MS);
     });
-    var request = fetchCSV(SHEET.prizesUrl, controller ? controller.signal : null).then(function (csv) {
-      var slots = rowsToSlots(parseCSV(csv));
-      if (slots.length < 2) throw new Error("Configurația live nu conține suficiente premii");
-      return slots;
+    var signal = controller ? controller.signal : null;
+    // Convert a Prizes failure into data so that Status=0 remains a valid,
+    // immediately renderable pre-live state rather than a loading error.
+    var prizes = fetchDirectPrizes(signal).then(function (slots) {
+      return { slots: slots };
+    }, function (error) {
+      return { error: error };
     });
-    return Promise.race([request, timeout]).then(function (slots) {
+    var request = fetchDirectStatus(signal).then(function (live) {
+      if (!live) return { live: false };
+      return prizes.then(function (prizesResult) {
+        if (prizesResult.error) throw prizesResult.error;
+        return { live: true, slots: prizesResult.slots };
+      });
+    });
+    return Promise.race([request, timeout]).then(function (state) {
       clearTimeout(timeoutId);
-      return slots;
+      return { epoch: directEpoch, state: state };
     }, function (error) {
       clearTimeout(timeoutId);
-      throw error;
+      return { epoch: directEpoch, error: error };
     });
   }
   function applyFreshDirectPrizes(slots) {
-    var nextConfig = deepCopy(config);
-    nextConfig.slots = slots;
+    var nextConfig = { slots: slots, texts: deepCopy(directTexts) };
     config = nextConfig;
-    // A background Prizes + Texts fetch that began before this strict read must
-    // not later restore older slots through the active snapshot.
+    // A background direct refresh that began before this strict read must not
+    // later restore older slots through the active snapshot.
     if (activeSnapshot) activeSnapshot.config = nextConfig;
     buildWheel(config);
     setLoadStatus("");
@@ -1068,6 +1244,34 @@
     loadStatus.textContent = message || "";
     loadStatus.hidden = !message;
     loadStatus.classList.toggle("is-error", !!isError);
+  }
+  function enterPreLive() {
+    var wasPreLive = directPreLive;
+    directPreLive = true;
+    activeSnapshot = null;
+    pendingSnapshot = null;
+    refreshRequired = false;
+    result.classList.remove("show", "win");
+    document.body.classList.remove("skeleton");
+    document.body.classList.add("prelive");
+    if (!wasPreLive) {
+      wheel.style.transition = "none";
+      currentRotation = 0;
+      wheel.style.transform = "rotate(0deg)";
+      buildPreLiveWheel();
+      void wheel.offsetWidth;
+      wheel.style.transition = "";
+    }
+    wheel.setAttribute("aria-label", "Loteria începe în curând");
+    applyPreLiveTexts(directTexts);
+    setLoadStatus("");
+    setDisabled(true);
+  }
+  function leavePreLive() {
+    if (!directPreLive) return;
+    directPreLive = false;
+    document.body.classList.remove("prelive");
+    wheel.setAttribute("aria-label", "Roata vacanțelor");
   }
   function updateDebug(snapshotOrManifest, note) {
     var manifest = snapshotOrManifest && (snapshotOrManifest.manifest || snapshotOrManifest);
@@ -1141,6 +1345,26 @@
       return fetchStableSnapshot(manifest);
     });
   }
+  function requestDirectRefresh(directEpochAtStart, statusOnly) {
+    return fetchDirectStatus().then(function (live) {
+      if (!isCurrentDirectEpoch(directEpochAtStart)) return null;
+      if (!live) {
+        // Pre-live copy is useful before launch too; it remains independent
+        // from the status decision. Never start this request over a result.
+        if (!statusOnly) refreshDirectTexts();
+        enterPreLiveForDirectEpoch(directEpochAtStart);
+        return null;
+      }
+      // A visible result is already based on a completed draw. Keep checking
+      // Status, so 0 can close the campaign promptly, but do not fetch or
+      // apply Prizes/Text during that result state.
+      if (statusOnly) return null;
+      // Copy has its own request and failure mode. It is deliberately never a
+      // dependency of Status or Prizes.
+      refreshDirectTexts();
+      return fetchDirectPrizesSnapshot();
+    });
+  }
   function requestRefresh(force) {
     if (refreshInFlight) return;
     if (SHEET.manifestUrl) {
@@ -1149,20 +1373,30 @@
       if (!force && Date.now() - lastRefreshCheck < 30000) return;
     } else {
       if (document.visibilityState !== "visible") return;
-      if (isInteractionActive()) return;
+      if (spinning || preparingSpin) return;
       if (Date.now() - lastRefreshCheck < 1000) return;
     }
     lastRefreshCheck = Date.now();
     refreshInFlight = true;
     var initial = !activeSnapshot;
-    // If a strict direct Prizes read starts after this background request, its
-    // response wins. The older background snapshot is ignored on completion.
+    // If a strict direct Status + Prizes read starts after this background
+    // request, its response wins. The older snapshot is ignored on completion.
     var directEpochAtStart = SHEET.manifestUrl ? null : directPrizesEpoch;
-    var request = SHEET.manifestUrl ? requestVersionedRefresh() : fetchLegacySnapshot();
+    var directStatusOnly = !SHEET.manifestUrl && result.classList.contains("show");
+    var request = SHEET.manifestUrl ? requestVersionedRefresh() : requestDirectRefresh(directEpochAtStart, directStatusOnly);
     request.then(function (snapshot) {
       if (!SHEET.manifestUrl && directEpochAtStart !== directPrizesEpoch) return;
-      if (snapshot) stageSnapshot(snapshot);
+      if (snapshot) {
+        if (!SHEET.manifestUrl && directPreLive) {
+          leavePreLive();
+          settleFirstSnapshot(snapshot);
+        } else {
+          stageSnapshot(snapshot);
+        }
+      }
     }, function (error) {
+      if (!SHEET.manifestUrl && !isCurrentDirectEpoch(directEpochAtStart)) return;
+      if (!SHEET.manifestUrl && failClosedDirectRequest(directEpochAtStart)) return;
       handleRefreshFailure(error, initial);
     }).then(function () {
       refreshInFlight = false;
@@ -1202,7 +1436,44 @@
     document.body.classList.remove("skeleton");
     setDisabled(false);
   }
+  function startDirectLiveWheel() {
+    buildSkeleton();
+    document.body.classList.add("skeleton");
+    hub.disabled = true;
+    spinBtn.disabled = true;
+    refreshInFlight = true;
+    var directEpochAtStart = directPrizesEpoch;
+    fetchDirectStatus().then(function (live) {
+      if (!isCurrentDirectEpoch(directEpochAtStart)) return null;
+      refreshDirectTexts();
+      if (!live) {
+        enterPreLiveForDirectEpoch(directEpochAtStart);
+        return null;
+      }
+      return fetchDirectPrizesSnapshot();
+    }).then(function (snapshot) {
+      if (!isCurrentDirectEpoch(directEpochAtStart) || !snapshot) return;
+      leavePreLive();
+      settleFirstSnapshot(snapshot);
+    }, function (error) {
+      if (!isCurrentDirectEpoch(directEpochAtStart)) return;
+      if (failClosedDirectRequest(directEpochAtStart)) return;
+      handleRefreshFailure(error, true);
+    }).then(function () {
+      refreshInFlight = false;
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") requestRefresh(true);
+    });
+    window.addEventListener("focus", function () { requestRefresh(true); });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) requestRefresh(true); });
+    setInterval(function () { requestRefresh(false); }, CONFIG_POLL_MS);
+  }
   function startLiveWheel() {
+    if (!SHEET.manifestUrl) {
+      startDirectLiveWheel();
+      return;
+    }
     buildSkeleton();
     document.body.classList.add("skeleton");
     hub.disabled = true;
@@ -1227,7 +1498,7 @@
     config = readConfigFromHash() || deepCopy(DEFAULT_CONFIG);
     render(config);
     initEditor();
-  } else if (SHEET.manifestUrl || (SHEET.prizesUrl && SHEET.textsUrl)) {
+  } else if (SHEET.manifestUrl || SHEET.prizesUrl) {
     startLiveWheel();
   } else {
     buildSkeleton();
