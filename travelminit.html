@@ -449,9 +449,9 @@
   // ───────────────────────────────────────────────────────────────────────
   //  GOOGLE SHEET — this legacy fallback intentionally keeps its existing
   //  published-CSV links below. Do not replace them with a new campaign Sheet.
-  //  A separate gated embed may optionally set statusUrl to a direct CSV URL:
-  //  https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=<TAB_GID>.
-  //  That Sheet must be shared as "Anyone with the link" → Viewer.
+  //  Status is permanently wired to the legacy Sheet's separately published
+  //  CSV tab. It applies to every normal legacy URL; no Wix query parameters
+  //  are needed. The editor (?edit) deliberately bypasses the gate.
   //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link)
   //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional.
   //      Pre-live keys: preLiveTopline, preLiveHeadline, preLiveBody,
@@ -461,7 +461,7 @@
   var SHEET = {
     prizesUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=0&single=true&output=csv",
     textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv",
-    statusUrl: ""
+    statusUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1964190413&single=true&output=csv"
   };
 
   // Show ONLY the wheel (hide the heading / body / footer) — use this when you build
@@ -489,7 +489,12 @@
 
   function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
 
-  var config = readConfigFromHash() || deepCopy(DEFAULT_CONFIG);
+  // A link copied from the editor carries its complete copy in #cfg.  That
+  // configuration is deliberately authoritative: the legacy "Texte" tab
+  // must not overwrite it later during the 60-second / focus refreshes.
+  // Prizes and Status continue to refresh normally.
+  var formConfig = readConfigFromHash();
+  var config = formConfig || deepCopy(DEFAULT_CONFIG);
 
   // ---------- Geometry ----------
   var CX = 200, CY = 200, R = 196;
@@ -913,6 +918,11 @@
     html += '<div class="row2">' + field("Buton «premiu mare»", "t_ctaPrize", t.ctaPrize) + field("Buton «cupon»", "t_ctaCoupon", t.ctaCoupon) + '</div>';
     html += field("Titlu «Mai încearcă»", "t_taTitle", t.tryAgainTitle);
     html += area("Descriere «Mai încearcă»", "t_taDesc", t.tryAgainDesc);
+    html += '<fieldset><legend>Ecran înainte de lansare (Status = 0)</legend>';
+    html += field("Text mic (sus)", "t_preLiveTopline", t.preLiveTopline);
+    html += field("Titlu", "t_preLiveHeadline", t.preLiveHeadline);
+    html += area("Text", "t_preLiveBody", t.preLiveBody);
+    html += '</fieldset>';
 
     config.slots.forEach(function (s, i) {
       var typ = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
@@ -949,6 +959,9 @@
     c.texts.ctaCoupon = val("t_ctaCoupon");
     c.texts.tryAgainTitle = val("t_taTitle");
     c.texts.tryAgainDesc = val("t_taDesc");
+    c.texts.preLiveTopline = val("t_preLiveTopline");
+    c.texts.preLiveHeadline = val("t_preLiveHeadline");
+    c.texts.preLiveBody = val("t_preLiveBody");
     for (var i = 0; i < config.slots.length; i++) {
       c.slots.push({
         type: val("s_type_" + i),
@@ -1168,7 +1181,7 @@
   }
 
   function refreshTextsAsync() {
-    if (!SHEET.textsUrl) return;
+    if (!SHEET.textsUrl || formConfig) return;
     var serial = ++textRefreshSerial;
     fetchCSV(SHEET.textsUrl).then(function (text) {
       if (serial !== textRefreshSerial) return;
