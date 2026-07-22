@@ -78,7 +78,10 @@
   /* This copy is shown instead of the campaign copy while Status is 0. It is
      deliberately separate from the normal header so a Wix "wheel-only" embed
      still explains why the button is unavailable. */
-  .prelive-copy { display: none; width: 100%; }
+  .prelive-copy { display: none; width: 100%; text-align: center; }
+  .prelive-copy .topline,
+  .prelive-copy h1,
+  .prelive-copy .body-copy { margin-left: auto; margin-right: auto; text-align: center; }
   body.pre-live > .topline,
   body.pre-live > h1,
   body.pre-live > .body-copy { display: none; }
@@ -274,6 +277,12 @@
   .skel-pill { animation: tmpulse 1.2s ease-in-out infinite; }
   .topline, h1, .body-copy { transition: opacity 0.35s ease; }
   body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
+  /* Copy is owned by the Texte tab. Never reveal the stale HTML fallback
+     between the wheel/status response and the first Texte response. */
+  body.texts-loading > .topline,
+  body.texts-loading > h1,
+  body.texts-loading > .body-copy,
+  body.texts-loading .prelive-copy { opacity: 0; }
   body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
   @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
   @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
@@ -301,9 +310,9 @@
   }
 </style>
 </head>
-<body>
+<body class="skeleton texts-loading">
   <div class="topline" id="topline">Roata vacanțelor</div>
-  <h1 id="headline">Travelminit, du-mă oriunde cu 9 RON!</h1>
+  <h1 id="headline"></h1>
   <div class="body-copy" id="bodyCopy"></div>
 
   <div class="prelive-copy" id="preLiveCopy" role="status" aria-live="polite">
@@ -346,8 +355,8 @@
   var DEFAULT_CONFIG = {
     texts: {
       topline: "Roata vacanțelor",
-      headline: "Travelminit, du-mă oriunde cu 9 RON!",
-      body: "Te-ai săturat și ai pleca oriunde într-o vacanță? Tot ceea ce ai nevoie sunt 9 RON și un pic de noroc!\nÎn perioada 24 - 26 iunie 2026, zilnic la ora 12:00, roata se resetează cu noi premii, printre care și 3 vacanțe la 9 RON!\nÎnvârte roata și rezervă-ți premiul rapid! Mult noroc, călătorule!",
+      headline: "",
+      body: "",
       spinButton: "Învârte roata",
       hub: "Învârte",
       ctaPrize: "Rezervă acum →",
@@ -971,6 +980,13 @@
   // so a slow Texts tab can never delay a status/prize decision or a spin.
   var textRefreshSerial = 0;
   var pendingTexts = null;
+  var initialTextsPending = !!SHEET.textsUrl;
+
+  function finishInitialTextsLoad() {
+    if (!initialTextsPending) return;
+    initialTextsPending = false;
+    document.body.classList.remove("texts-loading");
+  }
 
   function applyTextsSnapshot(nextTexts) {
     config.texts = nextTexts;
@@ -986,6 +1002,7 @@
     var nextTexts = pendingTexts;
     pendingTexts = null;
     applyTextsSnapshot(nextTexts);
+    finishInitialTextsLoad();
   }
 
   function refreshTextsAsync() {
@@ -1004,7 +1021,13 @@
         return;
       }
       applyTextsSnapshot(nextTexts);
-    }).catch(function () {});
+      finishInitialTextsLoad();
+    }).catch(function () {
+      if (serial !== textRefreshSerial) return;
+      // If Texte is unavailable, expose only the neutral fallback — never the
+      // previous campaign's hard-coded offer.
+      finishInitialTextsLoad();
+    });
   }
 
   // ---------- Init ----------
@@ -1012,6 +1035,8 @@
   // Sheet tabs above. URL query/hash values intentionally have no effect.
   statusGateEnabled = !!SHEET.statusUrl;
   if (BARE) document.body.classList.add("bare");
+  if (initialTextsPending) document.body.classList.add("texts-loading");
+  else document.body.classList.remove("texts-loading");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
 
@@ -1074,20 +1099,22 @@
       setDisabled(!campaignLive);
     }
     var initialCampaignStateSerial = ++campaignStateRequestSerial;
+    // Start Texte at the same time as Status + Premii. The text layer remains
+    // invisible until this first response, so it cannot flash stale copy.
+    refreshTextsAsync();
     loadCampaignState({ baseConfig: config, requireLivePrizes: statusGateEnabled }).then(function (state) {
       state.campaignStateRequestSerial = initialCampaignStateSerial;
       if (settled) applyCampaignState(state);
       else settle(state);
-      refreshTextsAsync();
     }, function (error) {
       error = error || {};
       error.campaignStateRequestSerial = initialCampaignStateSerial;
       if (!settled) settle(null);
       else if (statusGateEnabled && acceptCampaignStateSerial(error.campaignStateRequestSerial)) enterPreLiveMode();
-      refreshTextsAsync();
     });
     setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
   } else {
+    document.body.classList.remove("skeleton");
     render(config);
   }
 
