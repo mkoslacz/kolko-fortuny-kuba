@@ -295,19 +295,16 @@
   body.skeleton .wheel-shimmer { display: block; }
   .skel-pill { animation: tmpulse 1.2s ease-in-out infinite; }
   .topline, h1, .body-copy { transition: opacity 0.35s ease; }
-  body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
-  body.skeleton > .topline,
-  body.skeleton > h1,
-  body.skeleton > .body-copy,
-  body.skeleton .prelive-copy { display: none; }
-  /* Copy is owned by the Texte tab. Never reveal the stale HTML fallback
-     between the wheel/status response and the first Texte response. */
-  body.texts-loading > .topline,
-  body.texts-loading > h1,
-  body.texts-loading > .body-copy,
-  body.texts-loading .prelive-copy { display: none; }
-  body.skeleton .copy-shimmer,
-  body.texts-loading .copy-shimmer { display: flex; }
+  /* Copy is owned by Texte + Status, while the wheel is owned by
+     Status + Premii. The two placeholders must therefore resolve separately:
+     a ready header may appear over a still-loading wheel, and vice versa.
+     Status stays part of the copy gate so a delayed `live=0` can never expose
+     the campaign's live copy before the safety gate is known. */
+  body.copy-loading > .topline,
+  body.copy-loading > h1,
+  body.copy-loading > .body-copy,
+  body.copy-loading .prelive-copy { display: none; }
+  body.copy-loading .copy-shimmer { display: flex; }
   body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
   @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
   @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
@@ -335,7 +332,7 @@
   }
 </style>
 </head>
-<body class="skeleton texts-loading">
+<body class="skeleton texts-loading copy-loading">
   <div class="topline" id="topline">Roata vacanțelor</div>
   <h1 id="headline"></h1>
   <div class="body-copy" id="bodyCopy"></div>
@@ -597,6 +594,9 @@
   var currentRotation = 0;
   var campaignLive = true;
   var statusGateEnabled = false;
+  // The header must know whether it should display the live or pre-live
+  // Texte copy. It may resolve before prizes, but never before Status.
+  var initialCampaignStatusKnown = false;
   // Every status/prizes read gets a monotonically increasing serial. A late
   // background response must never overwrite a newer strict pre-spin result.
   var campaignStateRequestSerial = 0;
@@ -630,6 +630,27 @@
     resetWheelRotation();
     buildPreLiveWheel();
     setDisabled(true);
+  }
+
+  function finishInitialCopyLoad() {
+    if (initialTextsPending || !initialCampaignStatusKnown) return;
+    document.body.classList.remove("copy-loading");
+  }
+
+  function noteInitialCampaignStatus(isLive) {
+    // Only the first valid Status response owns the initial copy gate. Later
+    // state transitions still go through applyCampaignState(), with its
+    // serial guard, so an old background response cannot roll the UI back.
+    if (initialCampaignStatusKnown) return;
+    initialCampaignStatusKnown = true;
+    if (isLive) {
+      campaignLive = true;
+      document.body.classList.remove("pre-live");
+      applyTexts(config);
+    } else {
+      enterPreLiveMode();
+    }
+    finishInitialCopyLoad();
   }
 
   function acceptCampaignStateSerial(serial) {
@@ -995,6 +1016,9 @@
     }) : Promise.resolve({ error: new Error("Lipsește URL-ul pentru premii") });
 
     return statusRequest.then(function (isLive) {
+      // Status decides which Texte block is safe to display. Report it before
+      // waiting for Premii so the header and wheel do not share one loader.
+      if (typeof options.onStatusResolved === "function") options.onStatusResolved(isLive);
       if (!isLive) return { live: false, config: cfg };
       return prizesRequest.then(function (response) {
         if (response.error) throw response.error;
@@ -1019,10 +1043,17 @@
     if (!initialTextsPending) return;
     initialTextsPending = false;
     document.body.classList.remove("texts-loading");
+    finishInitialCopyLoad();
   }
 
   function applyTextsSnapshot(nextTexts) {
     config.texts = nextTexts;
+    // A Texte response may beat Status. Keep the authoritative values, but do
+    // not decide whether the live or pre-live block belongs on screen yet.
+    if (statusGateEnabled && !initialCampaignStatusKnown) {
+      finishInitialTextsLoad();
+      return;
+    }
     if (campaignLive) applyTexts(config);
     else {
       applyPreLiveTexts(config);
@@ -1066,9 +1097,12 @@
   // All public configuration comes from the fixed Premii, Texte and Status
   // Sheet tabs above. URL query/hash values intentionally have no effect.
   statusGateEnabled = !!SHEET.statusUrl;
+  initialCampaignStatusKnown = !statusGateEnabled;
   if (BARE) document.body.classList.add("bare");
   if (initialTextsPending) document.body.classList.add("texts-loading");
   else document.body.classList.remove("texts-loading");
+  if (initialTextsPending || !initialCampaignStatusKnown) document.body.classList.add("copy-loading");
+  else document.body.classList.remove("copy-loading");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
 
@@ -1134,7 +1168,11 @@
     // Start Texte at the same time as Status + Premii. The text layer remains
     // invisible until this first response, so it cannot flash stale copy.
     refreshTextsAsync();
-    loadCampaignState({ baseConfig: config, requireLivePrizes: statusGateEnabled }).then(function (state) {
+    loadCampaignState({
+      baseConfig: config,
+      requireLivePrizes: statusGateEnabled,
+      onStatusResolved: noteInitialCampaignStatus
+    }).then(function (state) {
       state.campaignStateRequestSerial = initialCampaignStateSerial;
       if (settled) applyCampaignState(state);
       else settle(state);
@@ -1147,6 +1185,7 @@
     setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
   } else {
     document.body.classList.remove("skeleton");
+    finishInitialCopyLoad();
     render(config);
   }
 
@@ -1178,7 +1217,8 @@
     var request = loadCampaignState({
       signal: controller ? controller.signal : null,
       requireLivePrizes: true,
-      baseConfig: config
+      baseConfig: config,
+      onStatusResolved: noteInitialCampaignStatus
     });
     return Promise.race([request, timeout]).then(function (state) {
       clearTimeout(timeoutId);
