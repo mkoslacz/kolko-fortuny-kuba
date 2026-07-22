@@ -24,97 +24,22 @@ the rarest (≈ 11% chance; the others ≈ 22% each).
 
 ## 🌴 Travelminit — Roata vacanțelor
 
-Wersja Travelminit ma 10 pól, rumuńskie teksty i trzy typy wyników: nagrodę z linkiem,
-kupon z kodem oraz „spróbuj ponownie”.
+There are two deliberately isolated Travelminit wheels:
 
-### Nowa kampania = nowy, niezmienny adres wydania
+- **Legacy fallback:** [`travelminit.html`](travelminit.html) stays unchanged and continues to
+  read the existing legacy Google Sheet. Do not use it for a new campaign and do not point it at
+  new data.
+- **New campaign source:** [`travelminit-new.html`](travelminit-new.html) has no legacy Sheet
+  URL. It is used only to create a new, immutable campaign release.
 
-Nie podmieniaj istniejącego `travelminit.html` tuż przed kampanią. Dla każdej kampanii
-tworzymy nowy fizyczny adres wydania; dzięki temu urządzenie, które było w poprzedniej
-kampanii, nie może użyć swojego starego pliku HTML.
-
-Gdy `Wersja` zawiera już pierwszy kompletny snapshot i jest opublikowana jako CSV, uruchom
-w katalogu projektu:
+The generator copies only the new source:
 
 ```bash
-bash scripts/create-travelminit-release.sh tm-20260720-r01 'https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv'
+bash scripts/create-travelminit-release.sh tm-YYYYMMDD-r01 '<published Version CSV URL>'
 ```
 
-Skrypt tworzy `releases/tm-20260720-r01/travelminit.html` i wypisuje gotowy iframe z
-zakodowanym adresem manifestu. Dodaj nowy katalog do repozytorium i opublikuj go na GitHub
-Pages, a następnie **dokładnie ten wypisany iframe** wklej do Wix. Będzie miał postać:
-
-```html
-<iframe src="https://mateuszkoslacz.com/kolko-fortuny-kuba/releases/tm-20260720-r01/travelminit.html?bare=1&manifest=ZAKODOWANY_ADRES_WERSJA_CSV"
-  title="Roata vacanțelor Travelminit"
-  style="display:block; width:100%; border:0"
-  loading="eager"></iframe>
-```
-
-Od startu kampanii adres iframe i plik wydania pozostają niezmienne. Zmieniasz wyłącznie
-manifest `Wersja` według procedury niżej — bez edycji HTML-a, bez zmiany Wix i bez nowego URL-a
-w newsletterze.
-
-### Jedno źródło koła na Wix
-
-Na stronie kampanii osadzaj **tylko jeden iframe** wskazujący na publiczny adres powyżej. Nie
-zostawiaj równolegle statycznego HTML w Wix ani drugiego elementu dla widoku mobilnego — wtedy
-część osób może dostać inną, starszą wersję.
-
-Na stronie `roata-vacantelor` wyłącz cache strony:
-
-1. W Wix wejdź w **Pages & Menu**.
-2. Przy stronie kampanii kliknij **More Actions** → **Settings** → **Advanced Settings**.
-3. Włącz **Manually control caching for this page**.
-4. Przy **How often do you want to reset this page’s cache?** wybierz **Never (disable caching)**.
-5. Kliknij **Publish**. Samo zapisanie zmian nie aktualizuje strony produkcyjnej.
-
-### Atomowa publikacja treści — bez kodu
-
-Nie edytuj opublikowanych danych `Premii` i `Texte` w miejscu. Samo ustawienie wersji na końcu
-nie byłoby atomowe: użytkownik mógłby pobrać nowe premie i stare teksty albo odwrotnie.
-
-Zaimportuj do Google Sheeta dwa pliki robocze oraz manifest:
-
-- [`travelminit-sheet-Premii.csv`](travelminit-sheet-Premii.csv) → robocza zakładka `Premii`;
-- [`travelminit-sheet-Texte.csv`](travelminit-sheet-Texte.csv) → robocza zakładka `Texte`;
-- [`travelminit-sheet-Version.csv`](travelminit-sheet-Version.csv) → zakładka `Wersja`.
-
-Zakładkę `Wersja` opublikuj raz jako CSV (`File` → `Share` → `Publish to web` →
-`Comma-separated values (.csv)`). Jej stały adres podajesz skryptowi przy tworzeniu wydania;
-skrypt umieszcza go w adresie iframe jako parametr `manifest`.
-
-`Wersja` jest manifestem z dokładnie jednym aktywnym wierszem:
-
-- `revision` — nowy, rosnący identyfikator publikacji, np. `20260720002`;
-- `premii_url` — adres CSV **niezmiennego snapshotu** premii dla tej rewizji;
-- `texte_url` — adres CSV **niezmiennego snapshotu** tekstów dla tej rewizji;
-- `published_at` — czas przełączenia w ISO UTC, np. `2026-07-20T12:30:00Z`.
-
-Kolejność publikacji jest obowiązkowa:
-
-1. Zmień i sprawdź robocze `Premii` oraz `Texte`.
-2. Nadaj nową rewizję, np. `20260720002`, i zduplikuj obie zakładki jako
-   `Premii-20260720002` oraz `Texte-20260720002`.
-3. Opublikuj **obie duplikaty** przez `File` → `Share` → `Publish to web` →
-   `Comma-separated values (.csv)`; skopiuj ich dwa adresy CSV i sprawdź je w przeglądarce.
-4. Nigdy nie zmieniaj już opublikowanych snapshotów. Poprawka zawsze oznacza nową rewizję i nowe
-   duplikaty zakładek.
-5. **Dopiero na końcu** przygotuj pełny nowy wiersz manifestu i wklej go jedną operacją do
-   `Wersja`: `revision`, oba adresy snapshotów oraz `published_at`. Nie poprawiaj tych komórek
-   pojedynczo. Ten zapis przełącza komplet premii i tekstów.
-
-Nie używaj publicznie `?edit` ani linków z `#cfg=…`: omijają manifest i mogą utrwalić
-indywidualną, nieaktualną konfigurację.
-
-### Kontrola przed publikacją
-
-Po zmianie otwórz adres koła z `?debug=1` (jeżeli adres iframe ma już parametr, dodaj
-`&debug=1`). Sprawdź, czy pokazane `revision` i `published_at` są identyczne z manifestem
-`Wersja`, a następnie sprawdź zwykły publiczny adres bez parametru. Test wykonaj również na tym
-samym linku kampanijnym z UTM-ami, który był użyty w newsletterze.
-
-Linki ofert są przyjmowane wyłącznie w formacie `http(s)`; układ jest dostosowany do telefonu.
+The full English Wix embedding and release procedure is in
+[`docs/TRAVELMINIT-WIX-RELEASE-GUIDE.md`](docs/TRAVELMINIT-WIX-RELEASE-GUIDE.md).
 
 ## 🛠️ How it works
 

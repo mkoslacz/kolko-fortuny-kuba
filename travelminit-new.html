@@ -16,12 +16,9 @@
 
 <!--
   ┌──────────────────────────────────────────────────────────────────────┐
-  │  EDITOR: add ?edit to the URL to open the prize editor.                │
-  │  e.g.  https://.../travelminit.html?edit                               │
-  │  3 slot types: "premiu mare" (big prize + link), "cupon" (coupon code  │
-  │  shown to the user + link), "try again" (no link). Edit, click          │
-  │  "Aplică pe roată", then "Copiază linkul" and paste it on the static    │
-  │  page. The whole configuration travels inside the link's #cfg= hash.    │
+  │  EDITOR: local preview only — never use ?edit or #cfg in a campaign.   │
+  │  The public wheel receives one immutable snapshot through the published │
+  │  Google Sheets manifest configured below.                               │
   └──────────────────────────────────────────────────────────────────────┘
 -->
 
@@ -260,6 +257,25 @@
   .topline, h1, .body-copy { transition: opacity 0.35s ease; }
   body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
   body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
+  .load-status {
+    display: none;
+    max-width: 420px;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: center;
+  }
+  .load-status.is-error { color: #ffd6d0; }
+  .load-status:not([hidden]) { display: block; }
+  .sync-debug {
+    display: none;
+    margin: 10px 0 0;
+    color: rgba(231,212,228,0.72);
+    font-size: 11px;
+    text-align: center;
+  }
+  html.debug .sync-debug { display: block; }
   @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
   @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
   @keyframes tmfadein { from { opacity: 0; } to { opacity: 1; } }
@@ -337,6 +353,8 @@
   </div>
 
   <button class="spin-btn" id="spinBtn">Învârte roata</button>
+  <p class="load-status" id="loadStatus" hidden role="status" aria-live="polite"></p>
+  <p class="sync-debug" id="syncDebug" aria-live="polite"></p>
 
   <div class="result" id="result" role="status" aria-live="polite">
     <div class="emoji" id="rEmoji">🎁</div>
@@ -406,17 +424,23 @@
   };
 
   // ───────────────────────────────────────────────────────────────────────
-  //  GOOGLE SHEET (one-time setup) — the wheel reads its prizes/texts LIVE
-  //  from a Google Sheet, so Larisa just edits the sheet and the wheel follows.
-  //  Paste the published-CSV links below. Leave "" to use DEFAULT_CONFIG above.
+  //  GOOGLE SHEET — the campaign reads one immutable configuration snapshot.
+  //  The manifest is the only source of truth in production; it points to
+  //  the two published snapshot CSV files. A campaign release receives its
+  //  manifest injected into an immutable release by the release generator.
+  //  This source file intentionally has no fallback link to the legacy Sheet.
   //  Get a link: Google Sheets → File → Share → Publish to web → choose the
   //  tab → "Comma-separated values (.csv)" → Publish → copy the URL.
-  //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link)
-  //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional
+  //    • Tab "Wersja" → manifestUrl (revision, prizes_url, texts_url, published_at)
+  //    • Each URL in Wersja must point to an IMMUTABLE published CSV snapshot.
+  //      Never edit a snapshot after Wersja starts pointing to it.
   // ───────────────────────────────────────────────────────────────────────
   var SHEET = {
-    prizesUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=0&single=true&output=csv",
-    textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv"
+    prizesUrl: "",
+    textsUrl: "",
+    // The release generator replaces this with the campaign's published
+    // Version CSV URL. Never put the legacy sheet URL here.
+    manifestUrl: ""
   };
 
   // Show ONLY the wheel (hide the heading / body / footer) — use this when you build
@@ -444,7 +468,9 @@
 
   function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
 
-  var config = readConfigFromHash() || deepCopy(DEFAULT_CONFIG);
+  // Public campaign mode never takes configuration from the URL hash. Defaults
+  // are reserved for the local preview editor; a live wheel starts with no data.
+  var config = null;
 
   // ---------- Geometry ----------
   var CX = 200, CY = 200, R = 196;
@@ -486,6 +512,8 @@
   var rCouponCode = document.getElementById("rCouponCode");
   var rCouponCopy = document.getElementById("rCouponCopy");
   var rCta = document.getElementById("rCta");
+  var loadStatus = document.getElementById("loadStatus");
+  var syncDebug = document.getElementById("syncDebug");
 
   function applyTexts(cfg) {
     document.getElementById("topline").textContent = cfg.texts.topline;
@@ -568,17 +596,23 @@
 
   function setDisabled(d) {
     hub.disabled = d; spinBtn.disabled = d;
-    hub.textContent = d ? "..." : config.texts.hub;
+    hub.textContent = d ? "..." : (config ? config.texts.hub : "Învârte");
   }
 
   function spin() {
     if (spinning) return;
+    if (typeof applyPendingSnapshot === "function") applyPendingSnapshot();
+    if (!config || (typeof refreshRequired !== "undefined" && refreshRequired)) {
+      setDisabled(true);
+      return;
+    }
     spinning = true;
     setDisabled(true);
     result.classList.remove("show", "win");
 
+    var spinConfig = config;
     var k = Math.floor(Math.random() * SEGMENTS);
-    var slot = config.slots[k];
+    var slot = spinConfig.slots[k];
 
     var segCenter = k * ANGLE + ANGLE / 2;
     var jitter = (Math.random() - 0.5) * (ANGLE * 0.6);
@@ -596,21 +630,21 @@
       done = true;
       spinning = false;
       setDisabled(false);
-      showResult(slot);
+      showResult(slot, spinConfig);
     }
     wheel.addEventListener("transitionend", reveal, { once: true });
     setTimeout(reveal, 6800);
   }
 
-  function showResult(s) {
+  function showResult(s, resultConfig) {
     var type = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
     var isWin = type !== "tryagain";
 
     rEmoji.textContent = s.icon || (type === "tryagain" ? "🔄" : type === "coupon" ? "🎟️" : "🎁");
 
     if (type === "tryagain") {
-      rTitle.textContent = config.texts.tryAgainTitle;
-      rDesc.textContent = config.texts.tryAgainDesc;
+      rTitle.textContent = resultConfig.texts.tryAgainTitle;
+      rDesc.textContent = resultConfig.texts.tryAgainDesc;
       rCoupon.style.display = "none";
       rCta.removeAttribute("href");
     } else {
@@ -623,7 +657,7 @@
         rCoupon.style.display = "none";
       }
       if (s.url) {
-        rCta.textContent = (type === "coupon") ? config.texts.ctaCoupon : config.texts.ctaPrize;
+        rCta.textContent = (type === "coupon") ? resultConfig.texts.ctaCoupon : resultConfig.texts.ctaPrize;
         rCta.setAttribute("href", s.url);
       } else {
         rCta.removeAttribute("href");
@@ -794,11 +828,11 @@
     });
   }
 
-  // ---------- Google Sheet loading ----------
+  // ---------- Published configuration snapshots ----------
+  // Every request receives a unique URL, so neither the browser nor Google's CSV
+  // cache can silently return its previous response. Google may still need a short
+  // time to publish a Sheet change; the wheel never treats that as a new revision.
   function fetchCSV(url) {
-    // Cache-buster: a unique query param changes the URL so neither the browser
-    // nor Google's published-CSV edge cache can serve a stale copy. Without this,
-    // sheet edits can take minutes to appear ("zmiana arkusza nie pomaga").
     var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now();
     return fetch(url + bust, { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
@@ -806,7 +840,6 @@
     });
   }
   function parseCSV(text) {
-    // Proper streaming parser: quotes may contain commas AND newlines (multi-line cells)
     text = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     var rows = [], row = [], cur = "", inQ = false;
     for (var i = 0; i < text.length; i++) {
@@ -847,6 +880,10 @@
     return "prize";
   }
   function safeUrl(u) { u = String(u == null ? "" : u).trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+  function isHttpsUrl(u) {
+    try { return new URL(String(u)).protocol === "https:"; } catch (e) { return false; }
+  }
+  function cell(row, index) { return index >= 0 && index < row.length ? String(row[index]).trim() : ""; }
 
   function rowsToSlots(rows) {
     if (!rows || rows.length < 2) return [];
@@ -861,27 +898,26 @@
       url: colIndex(h, ["link", "url"])
     };
     if (ci.type < 0 && ci.label < 0 && ci.url < 0) ci = { type: 0, icon: 1, label: 2, title: 3, desc: 4, coupon: 5, url: 6 };
-    function g(row, idx) { return idx >= 0 && idx < row.length ? String(row[idx]).trim() : ""; }
     var slots = [];
     for (var r = 1; r < rows.length; r++) {
       var row = rows[r];
-      var type = mapType(g(row, ci.type));
-      var label = g(row, ci.label), title = g(row, ci.title);
+      var type = mapType(cell(row, ci.type));
+      var label = cell(row, ci.label), title = cell(row, ci.title);
       if (!label && !title && type !== "tryagain") continue;
       slots.push({
-        type: type, icon: g(row, ci.icon), label: label, title: title,
-        desc: g(row, ci.desc), coupon: g(row, ci.coupon), url: safeUrl(g(row, ci.url))
+        type: type, icon: cell(row, ci.icon), label: label, title: title,
+        desc: cell(row, ci.desc), coupon: cell(row, ci.coupon), url: safeUrl(cell(row, ci.url))
       });
     }
     return slots;
   }
-  function applyTextsCSV(texts, rows) {
-    if (!rows || rows.length < 1) return;
-    var start = (rows[0] && (norm(rows[0][0]) === "cheie" || norm(rows[0][0]) === "key")) ? 1 : 0;
+  function textsFromRows(rows) {
+    if (!rows || rows.length < 2) throw new Error("Lipsesc textele campaniei");
+    var start = (norm(rows[0][0]) === "cheie" || norm(rows[0][0]) === "key") ? 1 : 0;
     var map = {};
     for (var r = start; r < rows.length; r++) {
       var k = norm(rows[r][0]).replace(/[^a-z0-9]/g, "");
-      if (k) map[k] = rows[r][1] != null ? String(rows[r][1]) : "";
+      if (k) map[k] = rows[r][1] != null ? String(rows[r][1]).trim() : "";
     }
     var keymap = {
       topline: "topline", headline: "headline", buton: "spinButton", spinbutton: "spinButton",
@@ -889,111 +925,235 @@
       ctacupon: "ctaCoupon", ctacoupon: "ctaCoupon", tryagaintitle: "tryAgainTitle",
       titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc"
     };
+    var texts = {};
     Object.keys(map).forEach(function (k) { if (keymap[k] && map[k] !== "") texts[keymap[k]] = map[k]; });
     var parts = [map.body1, map.body2, map.body3].filter(Boolean);
     if (parts.length) texts.body = parts.join("\n");
     else if (map.body) texts.body = map.body;
+    ["topline", "headline", "body", "spinButton", "hub", "ctaPrize", "ctaCoupon", "tryAgainTitle", "tryAgainDesc"].forEach(function (key) {
+      if (!texts[key]) throw new Error("Lipsește textul obligatoriu: " + key);
+    });
+    return texts;
   }
-  function loadFromSheet() {
-    var pPrizes = fetchCSV(SHEET.prizesUrl);
-    var pTexts = SHEET.textsUrl ? fetchCSV(SHEET.textsUrl).catch(function () { return null; }) : Promise.resolve(null);
-    return Promise.all([pPrizes, pTexts]).then(function (res) {
-      var cfg = deepCopy(DEFAULT_CONFIG);
-      var slots = rowsToSlots(parseCSV(res[0]));
-      if (slots.length >= 2) cfg.slots = slots;
-      if (res[1]) applyTextsCSV(cfg.texts, parseCSV(res[1]));
-      return cfg;
+  function configFromCSV(prizesCSV, textsCSV) {
+    var slots = rowsToSlots(parseCSV(prizesCSV));
+    if (slots.length < 2) throw new Error("Configurația nu conține suficiente premii");
+    return { slots: slots, texts: textsFromRows(parseCSV(textsCSV)) };
+  }
+  function parseManifest(csv) {
+    var rows = parseCSV(csv);
+    if (rows.length !== 2) throw new Error("Manifestul trebuie să conțină exact o versiune activă");
+    var h = rows[0], row = rows[1];
+    var revision = cell(row, colIndex(h, ["revision", "versiune", "version"]));
+    var prizesUrl = cell(row, colIndex(h, ["prizesurl", "premiiurl"]));
+    var textsUrl = cell(row, colIndex(h, ["textsurl", "texteurl"]));
+    var publishedAt = cell(row, colIndex(h, ["publishedat", "publicatla"]));
+    if (!/^[1-9][0-9]*$/.test(revision)) throw new Error("Revizia manifestului trebuie să fie un număr pozitiv");
+    if (!isHttpsUrl(prizesUrl) || !isHttpsUrl(textsUrl)) throw new Error("Manifestul nu indică două snapshoturi HTTPS valide");
+    return { revision: Number(revision), prizesUrl: prizesUrl, textsUrl: textsUrl, publishedAt: publishedAt };
+  }
+  function sameManifest(a, b) {
+    return !!a && !!b && a.revision === b.revision && a.prizesUrl === b.prizesUrl && a.textsUrl === b.textsUrl;
+  }
+  function fetchManifest() { return fetchCSV(SHEET.manifestUrl).then(parseManifest); }
+  function fetchSnapshot(manifest) {
+    return Promise.all([fetchCSV(manifest.prizesUrl), fetchCSV(manifest.textsUrl)]).then(function (res) {
+      return { manifest: manifest, config: configFromCSV(res[0], res[1]), syncedAt: new Date() };
+    });
+  }
+  function fetchStableSnapshot(manifest) {
+    return fetchSnapshot(manifest).then(function (snapshot) {
+      return fetchManifest().then(function (latest) {
+        if (!sameManifest(manifest, latest)) throw new Error("Manifestul s-a schimbat în timpul sincronizării");
+        snapshot.manifest = latest;
+        return snapshot;
+      });
+    });
+  }
+  function fetchLegacySnapshot() {
+    return Promise.all([fetchCSV(SHEET.prizesUrl), fetchCSV(SHEET.textsUrl)]).then(function (res) {
+      return {
+        manifest: { revision: 0, prizesUrl: SHEET.prizesUrl, textsUrl: SHEET.textsUrl, publishedAt: "legacy" },
+        config: configFromCSV(res[0], res[1]),
+        syncedAt: new Date()
+      };
+    });
+  }
+  function fetchCurrentSnapshot() {
+    if (SHEET.manifestUrl) return fetchManifest().then(fetchStableSnapshot);
+    return fetchLegacySnapshot();
+  }
+
+  // ---------- Synchronization state ----------
+  var CONFIG_POLL_MS = 60000;
+  var INITIAL_RETRY_MS = 15000;
+  var activeSnapshot = null;
+  var pendingSnapshot = null;
+  var refreshInFlight = false;
+  var refreshRequired = false;
+  var lastRefreshCheck = 0;
+  var retryTimer = null;
+  var debugMode = false;
+
+  function setLoadStatus(message, isError) {
+    loadStatus.textContent = message || "";
+    loadStatus.hidden = !message;
+    loadStatus.classList.toggle("is-error", !!isError);
+  }
+  function updateDebug(snapshotOrManifest, note) {
+    var manifest = snapshotOrManifest && (snapshotOrManifest.manifest || snapshotOrManifest);
+    if (!manifest) return;
+    document.documentElement.dataset.configVersion = String(manifest.revision);
+    if (!debugMode) return;
+    var stamp = snapshotOrManifest.syncedAt instanceof Date
+      ? snapshotOrManifest.syncedAt.toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      : "";
+    syncDebug.textContent = "v" + manifest.revision + (manifest.publishedAt ? " · publicat " + manifest.publishedAt : "") + (stamp ? " · sincronizat " + stamp : "") + (note ? " · " + note : "");
+  }
+  function isInteractionActive() { return spinning || result.classList.contains("show"); }
+  function sameSnapshot(a, b) {
+    if (!a || !b) return false;
+    if (a.manifest.revision || b.manifest.revision) return sameManifest(a.manifest, b.manifest);
+    return JSON.stringify(a.config) === JSON.stringify(b.config);
+  }
+  function commitSnapshot(snapshot) {
+    config = snapshot.config;
+    activeSnapshot = snapshot;
+    pendingSnapshot = null;
+    refreshRequired = false;
+    applyTexts(config);
+    buildWheel(config);
+    setLoadStatus("");
+    updateDebug(snapshot);
+  }
+  function stageSnapshot(snapshot) {
+    if (activeSnapshot && snapshot.manifest.revision && snapshot.manifest.revision < activeSnapshot.manifest.revision) return;
+    if (sameSnapshot(activeSnapshot, snapshot) || sameSnapshot(pendingSnapshot, snapshot)) return;
+    if (!activeSnapshot || !isInteractionActive()) {
+      commitSnapshot(snapshot);
+      setDisabled(false);
+      return;
+    }
+    pendingSnapshot = snapshot;
+    refreshRequired = false;
+    updateDebug(snapshot, "noua versiune este pregătită");
+    if (!spinning) setDisabled(false);
+  }
+  function applyPendingSnapshot() {
+    if (!pendingSnapshot || spinning) return;
+    commitSnapshot(pendingSnapshot);
+  }
+  function scheduleRetry() {
+    if (retryTimer) return;
+    retryTimer = setTimeout(function () {
+      retryTimer = null;
+      requestRefresh(true);
+    }, INITIAL_RETRY_MS);
+  }
+  function handleRefreshFailure(error, initial) {
+    if (initial || !activeSnapshot) {
+      setLoadStatus("Nu am putut încărca roata. Reîncercăm automat în câteva secunde.", true);
+      scheduleRetry();
+      return;
+    }
+    if (refreshRequired) {
+      setLoadStatus("Actualizăm premiile. Reîncearcă imediat.", true);
+      if (!isInteractionActive()) setDisabled(true);
+      scheduleRetry();
+    }
+    if (debugMode && error) updateDebug(activeSnapshot, "ultima sincronizare nu a reușit");
+  }
+  function requestVersionedRefresh() {
+    return fetchManifest().then(function (manifest) {
+      if (activeSnapshot && manifest.revision < activeSnapshot.manifest.revision) return null;
+      if ((activeSnapshot && sameManifest(manifest, activeSnapshot.manifest)) || (pendingSnapshot && sameManifest(manifest, pendingSnapshot.manifest))) return null;
+      refreshRequired = true;
+      updateDebug(manifest, "se descarcă versiunea nouă");
+      return fetchStableSnapshot(manifest);
+    });
+  }
+  function requestRefresh(force) {
+    if (refreshInFlight) return;
+    if (!force && document.visibilityState !== "visible") return;
+    if (!force && Date.now() - lastRefreshCheck < 30000) return;
+    lastRefreshCheck = Date.now();
+    refreshInFlight = true;
+    var initial = !activeSnapshot;
+    var request = SHEET.manifestUrl ? requestVersionedRefresh() : fetchLegacySnapshot();
+    request.then(function (snapshot) {
+      if (snapshot) stageSnapshot(snapshot);
+    }, function (error) {
+      handleRefreshFailure(error, initial);
+    }).then(function () {
+      refreshInFlight = false;
     });
   }
 
   // ---------- Init ----------
   var qp = new URLSearchParams(location.search);
-  if (qp.get("prizes")) SHEET.prizesUrl = qp.get("prizes");
-  if (qp.get("texts")) SHEET.textsUrl = qp.get("texts");
   if (qp.has("bare") || BARE) document.body.classList.add("bare");
+  debugMode = qp.has("debug");
+  if (debugMode) document.documentElement.classList.add("debug");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
-
-  if (qp.has("edit")) {
-    render(config);
-    initEditor();
-  } else if (SHEET.prizesUrl) {
-    // Show the wheel instantly with shimmering placeholders, then fade in the real
-    // content once the sheet loads — and only then enable the buttons.
+  function settleFirstSnapshot(snapshot) {
+    if (activeSnapshot) { stageSnapshot(snapshot); return; }
+    var movers = [document.querySelector(".stage"), spinBtn, document.querySelector("footer")].filter(Boolean);
+    var firstTop = movers.map(function (el) { return el.getBoundingClientRect().top; });
+    commitSnapshot(snapshot);
+    var deltas = movers.map(function (el, i) { return firstTop[i] - el.getBoundingClientRect().top; });
+    movers.forEach(function (el, i) {
+      if (Math.abs(deltas[i]) < 1) return;
+      el.style.transition = "none";
+      el.style.transform = "translateY(" + deltas[i] + "px)";
+    });
+    void document.body.offsetWidth;
+    movers.forEach(function (el, i) {
+      if (Math.abs(deltas[i]) < 1) return;
+      el.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
+      el.style.transform = "translateY(0)";
+    });
+    setTimeout(function () {
+      movers.forEach(function (el) { el.style.transition = ""; el.style.transform = ""; });
+    }, 560);
+    wheel.style.animation = "none";
+    void wheel.offsetWidth;
+    wheel.style.animation = "tmfadein 0.4s ease";
+    document.body.classList.remove("skeleton");
+    setDisabled(false);
+  }
+  function startLiveWheel() {
     buildSkeleton();
     document.body.classList.add("skeleton");
     hub.disabled = true;
     spinBtn.disabled = true;
-    var settled = false;
-    function settle(cfg) {
-      if (settled) return;
-      settled = true;
-      if (cfg) config = cfg;
-
-      // FLIP: record where the wheel / button / footer sit now (skeleton layout)
-      var movers = [document.querySelector(".stage"), spinBtn, document.querySelector("footer")].filter(Boolean);
-      var firstTop = movers.map(function (el) { return el.getBoundingClientRect().top; });
-
-      applyTexts(config);                       // header text fills in → its height changes
-      buildWheel(config);
-
-      // ...then glide them from the old position to the new one instead of jumping
-      var deltas = movers.map(function (el, i) { return firstTop[i] - el.getBoundingClientRect().top; });
-      movers.forEach(function (el, i) {
-        if (Math.abs(deltas[i]) < 1) return;
-        el.style.transition = "none";
-        el.style.transform = "translateY(" + deltas[i] + "px)";
-      });
-      void document.body.offsetWidth;           // commit the inverted position
-      movers.forEach(function (el, i) {
-        if (Math.abs(deltas[i]) < 1) return;
-        el.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
-        el.style.transform = "translateY(0)";
-      });
-      setTimeout(function () {
-        movers.forEach(function (el) { el.style.transition = ""; el.style.transform = ""; });
-      }, 560);
-
-      wheel.style.animation = "none";
-      void wheel.offsetWidth;                   // restart the wheel fade-in
-      wheel.style.animation = "tmfadein 0.4s ease";
-      document.body.classList.remove("skeleton");
-      setDisabled(false);                       // enable the buttons
-    }
-    loadFromSheet().then(settle).catch(function () { settle(null); });
-    setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
-  } else {
-    render(config);
+    refreshInFlight = true;
+    fetchCurrentSnapshot().then(function (snapshot) {
+      settleFirstSnapshot(snapshot);
+    }, function (error) {
+      handleRefreshFailure(error, true);
+    }).then(function () {
+      refreshInFlight = false;
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") requestRefresh(false);
+    });
+    window.addEventListener("focus", function () { requestRefresh(false); });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) requestRefresh(true); });
+    setInterval(function () { requestRefresh(false); }, CONFIG_POLL_MS);
   }
 
-  // ---------- Live refresh of prizes ----------
-  // The wheel reads the sheet only once, at load. A session opened early (e.g. the
-  // first people to get the link, right at 12:00) would otherwise keep showing those
-  // first-loaded prizes forever, even after the sheet is updated — exactly the
-  // "works for most, stale only for the first openers" symptom. Re-read the sheet
-  // whenever the tab regains focus or is restored from bfcache, plus a slow
-  // heartbeat, so a long-open session never serves stale prizes. Guarded so it never
-  // disrupts a spin in progress or a result on screen.
-  if (SHEET.prizesUrl) {
-    var lastRefresh = Date.now();
-    function refreshFromSheet(force) {
-      if (!force && Date.now() - lastRefresh < 30000) return;        // throttle bursts
-      if (spinning || result.classList.contains("show")) return;     // never yank mid-spin / mid-result
-      lastRefresh = Date.now();
-      loadFromSheet().then(function (cfg) {
-        if (spinning || result.classList.contains("show")) return;
-        if (JSON.stringify([cfg.slots, cfg.texts]) === JSON.stringify([config.slots, config.texts])) return; // unchanged → no flicker
-        config = cfg;
-        applyTexts(config);
-        buildWheel(config);
-      }).catch(function () {});
-    }
-    document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible") refreshFromSheet(false);
-    });
-    window.addEventListener("focus", function () { refreshFromSheet(false); });
-    window.addEventListener("pageshow", function (e) { if (e.persisted) refreshFromSheet(true); }); // bfcache restore
-    setInterval(function () { refreshFromSheet(false); }, 120000);   // heartbeat backstop
+  if (qp.has("edit")) {
+    config = readConfigFromHash() || deepCopy(DEFAULT_CONFIG);
+    render(config);
+    initEditor();
+  } else if (SHEET.manifestUrl || (SHEET.prizesUrl && SHEET.textsUrl)) {
+    startLiveWheel();
+  } else {
+    buildSkeleton();
+    document.body.classList.add("skeleton");
+    setDisabled(true);
+    setLoadStatus("Configurația campaniei nu este încă publicată.", true);
   }
 })();
 </script>
