@@ -273,16 +273,41 @@
     background: linear-gradient(105deg, rgba(255,255,255,0) 42%, rgba(255,255,255,0.40) 50%, rgba(255,255,255,0) 58%);
     background-size: 220% 100%; animation: tmsweep 1.15s linear infinite;
   }
+  .copy-shimmer {
+    display: none;
+    width: min(100%, 640px);
+    margin: 2px auto 22px;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .copy-shimmer span {
+    display: block;
+    border-radius: 999px;
+    background: linear-gradient(105deg, rgba(255,255,255,0.10) 42%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0.10) 58%);
+    background-size: 220% 100%;
+    animation: tmsweep 1.15s linear infinite;
+  }
+  .copy-shimmer .shimmer-topline { width: 132px; height: 12px; }
+  .copy-shimmer .shimmer-title { width: min(88%, 520px); height: 38px; }
+  .copy-shimmer .shimmer-body { width: 100%; height: 14px; }
+  .copy-shimmer .shimmer-body.short { width: 72%; }
   body.skeleton .wheel-shimmer { display: block; }
   .skel-pill { animation: tmpulse 1.2s ease-in-out infinite; }
   .topline, h1, .body-copy { transition: opacity 0.35s ease; }
   body.skeleton .topline, body.skeleton h1, body.skeleton .body-copy { opacity: 0; }
+  body.skeleton > .topline,
+  body.skeleton > h1,
+  body.skeleton > .body-copy,
+  body.skeleton .prelive-copy { display: none; }
   /* Copy is owned by the Texte tab. Never reveal the stale HTML fallback
      between the wheel/status response and the first Texte response. */
   body.texts-loading > .topline,
   body.texts-loading > h1,
   body.texts-loading > .body-copy,
-  body.texts-loading .prelive-copy { opacity: 0; }
+  body.texts-loading .prelive-copy { display: none; }
+  body.skeleton .copy-shimmer,
+  body.texts-loading .copy-shimmer { display: flex; }
   body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
   @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
   @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
@@ -290,7 +315,7 @@
 
   /* Wheel-only mode (set BARE=true in this file): hide page text/footer. */
   body.bare { padding-top: 14px; }
-  body.bare .topline, body.bare h1, body.bare .body-copy, body.bare footer { display: none; }
+  body.bare .topline, body.bare h1, body.bare .body-copy, body.bare .copy-shimmer, body.bare footer { display: none; }
   body.bare.pre-live .prelive-copy .topline,
   body.bare.pre-live .prelive-copy h1,
   body.bare.pre-live .prelive-copy .body-copy { display: block; }
@@ -319,6 +344,14 @@
     <div class="topline" id="preLiveTopline">Roata vacanțelor</div>
     <h1 id="preLiveHeadline">Loteria nu a început încă</h1>
     <div class="body-copy" id="preLiveBody"></div>
+  </div>
+
+  <div class="copy-shimmer" aria-hidden="true">
+    <span class="shimmer-topline"></span>
+    <span class="shimmer-title"></span>
+    <span class="shimmer-body"></span>
+    <span class="shimmer-body"></span>
+    <span class="shimmer-body short"></span>
   </div>
 
   <div class="stage">
@@ -1024,9 +1057,8 @@
       finishInitialTextsLoad();
     }).catch(function () {
       if (serial !== textRefreshSerial) return;
-      // If Texte is unavailable, expose only the neutral fallback — never the
-      // previous campaign's hard-coded offer.
-      finishInitialTextsLoad();
+      // Until the first real Texte response, keep the top shimmer in place.
+      // Focus / the active-tab heartbeat will retry; never reveal stale copy.
     });
   }
 
