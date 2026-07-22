@@ -592,6 +592,7 @@
 
   // ---------- Spin ----------
   var spinning = false;
+  var preparingSpin = false;
   var currentRotation = 0;
 
   function setDisabled(d) {
@@ -600,12 +601,38 @@
   }
 
   function spin() {
-    if (spinning) return;
+    if (spinning || preparingSpin) return;
+    if (hub.disabled || spinBtn.disabled) return;
     if (typeof applyPendingSnapshot === "function") applyPendingSnapshot();
     if (!config || (typeof refreshRequired !== "undefined" && refreshRequired)) {
       setDisabled(true);
       return;
     }
+
+    // Direct CSV releases do one independent, cache-busted Prizes read before
+    // choosing a segment. Do not reuse a focus/heartbeat request: it may have
+    // started before the player clicked. Manifest releases keep their existing
+    // atomic manifest + snapshot flow below.
+    if (!SHEET.manifestUrl && SHEET.prizesUrl) {
+      preparingSpin = true;
+      setDisabled(true);
+      fetchFreshDirectPrizesForSpin().then(function (slots) {
+        applyFreshDirectPrizes(slots);
+        preparingSpin = false;
+        startSpin();
+      }, function () {
+        preparingSpin = false;
+        setDisabled(false);
+        setLoadStatus("Premiile se actualizează. Încearcă din nou în câteva secunde.", true);
+      });
+      return;
+    }
+
+    startSpin();
+  }
+
+  function startSpin() {
+    if (spinning) return;
     spinning = true;
     setDisabled(true);
     result.classList.remove("show", "win");
@@ -832,9 +859,12 @@
   // Every request receives a unique URL, so neither the browser nor Google's CSV
   // cache can silently return its previous response. Google may still need a short
   // time to auto-republish a Sheet change.
-  function fetchCSV(url) {
-    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now();
-    return fetch(url + bust, { cache: "no-store" }).then(function (r) {
+  var cacheBustSerial = 0;
+  function fetchCSV(url, signal) {
+    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now() + "-" + (++cacheBustSerial);
+    var options = { cache: "no-store" };
+    if (signal) options.signal = signal;
+    return fetch(url + bust, options).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     });
@@ -984,8 +1014,47 @@
     return fetchLegacySnapshot();
   }
 
+  // Direct CSV releases must not let a slow Texts request delay a prize draw.
+  // This is deliberately separate from requestRefresh(), which may be up to a
+  // minute old when the player presses Spin.
+  var DIRECT_PRIZES_TIMEOUT_MS = 3500;
+  var directPrizesEpoch = 0;
+  function fetchFreshDirectPrizesForSpin() {
+    ++directPrizesEpoch;
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    var timeoutId;
+    var timeout = new Promise(function (_, reject) {
+      timeoutId = setTimeout(function () {
+        if (controller) controller.abort();
+        reject(new Error("Actualizarea premiilor a expirat"));
+      }, DIRECT_PRIZES_TIMEOUT_MS);
+    });
+    var request = fetchCSV(SHEET.prizesUrl, controller ? controller.signal : null).then(function (csv) {
+      var slots = rowsToSlots(parseCSV(csv));
+      if (slots.length < 2) throw new Error("Configurația live nu conține suficiente premii");
+      return slots;
+    });
+    return Promise.race([request, timeout]).then(function (slots) {
+      clearTimeout(timeoutId);
+      return slots;
+    }, function (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    });
+  }
+  function applyFreshDirectPrizes(slots) {
+    var nextConfig = deepCopy(config);
+    nextConfig.slots = slots;
+    config = nextConfig;
+    // A background Prizes + Texts fetch that began before this strict read must
+    // not later restore older slots through the active snapshot.
+    if (activeSnapshot) activeSnapshot.config = nextConfig;
+    buildWheel(config);
+    setLoadStatus("");
+  }
+
   // ---------- Synchronization state ----------
-  var CONFIG_POLL_MS = 120000;
+  var CONFIG_POLL_MS = SHEET.manifestUrl ? 120000 : 60000;
   var INITIAL_RETRY_MS = 15000;
   var activeSnapshot = null;
   var pendingSnapshot = null;
@@ -1010,7 +1079,7 @@
       : "";
     syncDebug.textContent = "v" + manifest.revision + (manifest.publishedAt ? " · publicat " + manifest.publishedAt : "") + (stamp ? " · sincronizat " + stamp : "") + (note ? " · " + note : "");
   }
-  function isInteractionActive() { return spinning || result.classList.contains("show"); }
+  function isInteractionActive() { return spinning || preparingSpin || result.classList.contains("show"); }
   function sameSnapshot(a, b) {
     if (!a || !b) return false;
     if (a.manifest.revision || b.manifest.revision) return sameManifest(a.manifest, b.manifest);
@@ -1074,13 +1143,24 @@
   }
   function requestRefresh(force) {
     if (refreshInFlight) return;
-    if (!force && document.visibilityState !== "visible") return;
-    if (!force && Date.now() - lastRefreshCheck < 30000) return;
+    if (SHEET.manifestUrl) {
+      // Keep the versioned manifest path's previous refresh semantics intact.
+      if (!force && document.visibilityState !== "visible") return;
+      if (!force && Date.now() - lastRefreshCheck < 30000) return;
+    } else {
+      if (document.visibilityState !== "visible") return;
+      if (isInteractionActive()) return;
+      if (Date.now() - lastRefreshCheck < 1000) return;
+    }
     lastRefreshCheck = Date.now();
     refreshInFlight = true;
     var initial = !activeSnapshot;
+    // If a strict direct Prizes read starts after this background request, its
+    // response wins. The older background snapshot is ignored on completion.
+    var directEpochAtStart = SHEET.manifestUrl ? null : directPrizesEpoch;
     var request = SHEET.manifestUrl ? requestVersionedRefresh() : fetchLegacySnapshot();
     request.then(function (snapshot) {
+      if (!SHEET.manifestUrl && directEpochAtStart !== directPrizesEpoch) return;
       if (snapshot) stageSnapshot(snapshot);
     }, function (error) {
       handleRefreshFailure(error, initial);
@@ -1136,9 +1216,9 @@
       refreshInFlight = false;
     });
     document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible") requestRefresh(false);
+      if (document.visibilityState === "visible") requestRefresh(!SHEET.manifestUrl);
     });
-    window.addEventListener("focus", function () { requestRefresh(false); });
+    window.addEventListener("focus", function () { requestRefresh(!SHEET.manifestUrl); });
     window.addEventListener("pageshow", function (e) { if (e.persisted) requestRefresh(true); });
     setInterval(function () { requestRefresh(false); }, CONFIG_POLL_MS);
   }

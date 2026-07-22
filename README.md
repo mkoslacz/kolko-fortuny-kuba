@@ -26,9 +26,8 @@ the rarest (≈ 11% chance; the others ≈ 22% each).
 
 There are two deliberately isolated Travelminit wheels:
 
-- **Legacy fallback:** [`travelminit.html`](travelminit.html) stays unchanged and continues to
-  read the existing legacy Google Sheet. Do not use it for a new campaign and do not point it at
-  new data.
+- **Legacy fallback:** [`travelminit.html`](travelminit.html) continues to read the existing
+  legacy Google Sheet. Do not use it for a new campaign and do not point it at new data.
 - **New campaign source:** [`travelminit-new.html`](travelminit-new.html) has no legacy Sheet
   URL. It is used only to create a new, immutable campaign release.
 

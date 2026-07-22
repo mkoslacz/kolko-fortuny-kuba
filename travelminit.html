@@ -173,6 +173,20 @@
   .spin-btn:active { transform: translateY(0); }
   .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
+  .sync-notice {
+    width: min(92vw, 540px);
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #ffdeaa;
+    font-size: 13px;
+    line-height: 1.45;
+    opacity: 0;
+    transition: max-height 0.2s ease, margin 0.2s ease, opacity 0.2s ease;
+  }
+  .sync-notice.show { max-height: 48px; margin: 10px 0 -8px; opacity: 1; }
+
   .result {
     margin-top: 26px;
     width: min(92vw, 540px);
@@ -337,6 +351,7 @@
   </div>
 
   <button class="spin-btn" id="spinBtn">Învârte roata</button>
+  <div class="sync-notice" id="syncNotice" role="status" aria-live="polite"></div>
 
   <div class="result" id="result" role="status" aria-live="polite">
     <div class="emoji" id="rEmoji">🎁</div>
@@ -486,6 +501,8 @@
   var rCouponCode = document.getElementById("rCouponCode");
   var rCouponCopy = document.getElementById("rCouponCopy");
   var rCta = document.getElementById("rCta");
+  var syncNotice = document.getElementById("syncNotice");
+  var syncNoticeTimer = null;
 
   function applyTexts(cfg) {
     document.getElementById("topline").textContent = cfg.texts.topline;
@@ -564,6 +581,7 @@
 
   // ---------- Spin ----------
   var spinning = false;
+  var preparingSpin = false;
   var currentRotation = 0;
 
   function setDisabled(d) {
@@ -572,6 +590,27 @@
   }
 
   function spin() {
+    if (spinning || preparingSpin) return;
+    if (hub.disabled || spinBtn.disabled) return;
+    if (!SHEET.prizesUrl) { startSpin(); return; }
+    preparingSpin = true;
+    setDisabled(true);
+
+    // Choose a segment only after this click's own strict live read succeeds.
+    // It must not reuse the focus/60-second background request: that request
+    // may already be a few seconds old when the player clicks Spin.
+    getFreshConfigForSpin().then(function (freshConfig) {
+      applyConfigIfChanged(freshConfig);
+      preparingSpin = false;
+      startSpin();
+    }, function () {
+      preparingSpin = false;
+      setDisabled(false);
+      showSyncNotice();
+    });
+  }
+
+  function startSpin() {
     if (spinning) return;
     spinning = true;
     setDisabled(true);
@@ -638,6 +677,15 @@
     });
 
     if (isWin) fireConfetti();
+  }
+
+  function showSyncNotice() {
+    syncNotice.textContent = "Premiile se actualizează. Încearcă din nou în câteva secunde.";
+    syncNotice.classList.add("show");
+    clearTimeout(syncNoticeTimer);
+    syncNoticeTimer = setTimeout(function () {
+      syncNotice.classList.remove("show");
+    }, 5000);
   }
 
   hub.addEventListener("click", spin);
@@ -795,12 +843,15 @@
   }
 
   // ---------- Google Sheet loading ----------
-  function fetchCSV(url) {
+  var cacheBustSerial = 0;
+  function fetchCSV(url, signal) {
     // Cache-buster: a unique query param changes the URL so neither the browser
     // nor Google's published-CSV edge cache can serve a stale copy. Without this,
     // sheet edits can take minutes to appear ("zmiana arkusza nie pomaga").
-    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now();
-    return fetch(url + bust, { cache: "no-store" }).then(function (r) {
+    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now() + "-" + (++cacheBustSerial);
+    var options = { cache: "no-store" };
+    if (signal) options.signal = signal;
+    return fetch(url + bust, options).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     });
@@ -894,15 +945,38 @@
     if (parts.length) texts.body = parts.join("\n");
     else if (map.body) texts.body = map.body;
   }
-  function loadFromSheet() {
-    var pPrizes = fetchCSV(SHEET.prizesUrl);
-    var pTexts = SHEET.textsUrl ? fetchCSV(SHEET.textsUrl).catch(function () { return null; }) : Promise.resolve(null);
-    return Promise.all([pPrizes, pTexts]).then(function (res) {
-      var cfg = deepCopy(DEFAULT_CONFIG);
-      var slots = rowsToSlots(parseCSV(res[0]));
+  function resolveOptionalText(textPromise, waitMs) {
+    if (!waitMs) return textPromise;
+    return new Promise(function (resolve) {
+      var timer = setTimeout(function () { resolve(null); }, waitMs);
+      textPromise.then(function (text) {
+        clearTimeout(timer);
+        resolve(text);
+      }, function () {
+        clearTimeout(timer);
+        resolve(null);
+      });
+    });
+  }
+  function loadFromSheet(options) {
+    options = options || {};
+    var pPrizes = fetchCSV(SHEET.prizesUrl, options.signal);
+    var pTexts = null;
+    if (SHEET.textsUrl && options.loadTexts !== false) {
+      pTexts = resolveOptionalText(fetchCSV(SHEET.textsUrl, options.signal).catch(function () { return null; }), options.textWaitMs);
+    }
+    return pPrizes.then(function (prizesText) {
+      // Pre-spin checks preserve the latest already-rendered text. Text is not
+      // an inventory decision and must never hold up a live prize check.
+      var cfg = deepCopy(options.baseConfig || DEFAULT_CONFIG);
+      var slots = rowsToSlots(parseCSV(prizesText));
+      if (options.requireLivePrizes && slots.length < 2) throw new Error("Configurația live nu conține suficiente premii");
       if (slots.length >= 2) cfg.slots = slots;
-      if (res[1]) applyTextsCSV(cfg.texts, parseCSV(res[1]));
-      return cfg;
+      if (!pTexts) return cfg;
+      return pTexts.then(function (textsText) {
+        if (textsText) applyTextsCSV(cfg.texts, parseCSV(textsText));
+        return cfg;
+      });
     });
   }
 
@@ -971,29 +1045,86 @@
   // first people to get the link, right at 12:00) would otherwise keep showing those
   // first-loaded prizes forever, even after the sheet is updated — exactly the
   // "works for most, stale only for the first openers" symptom. Re-read the sheet
-  // whenever the tab regains focus or is restored from bfcache, plus a slow
-  // heartbeat, so a long-open session never serves stale prizes. Guarded so it never
-  // disrupts a spin in progress or a result on screen.
-  if (SHEET.prizesUrl) {
-    var lastRefresh = Date.now();
-    function refreshFromSheet(force) {
-      if (!force && Date.now() - lastRefresh < 30000) return;        // throttle bursts
-      if (spinning || result.classList.contains("show")) return;     // never yank mid-spin / mid-result
-      lastRefresh = Date.now();
-      loadFromSheet().then(function (cfg) {
-        if (spinning || result.classList.contains("show")) return;
-        if (JSON.stringify([cfg.slots, cfg.texts]) === JSON.stringify([config.slots, config.texts])) return; // unchanged → no flicker
-        config = cfg;
-        applyTexts(config);
-        buildWheel(config);
-      }).catch(function () {});
-    }
-    document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible") refreshFromSheet(false);
+  // whenever the tab regains focus or is restored from bfcache, plus an active-tab
+  // heartbeat, so a long-open session never serves stale prizes. Every actual spin
+  // also makes a strict live request before its winning segment is selected.
+  var LIVE_CONFIG_TIMEOUT_MS = 3500;
+  var liveConfigRequest = null;
+  var lastBackgroundRefresh = 0;
+
+  function sameConfig(a, b) {
+    return JSON.stringify([a.slots, a.texts]) === JSON.stringify([b.slots, b.texts]);
+  }
+  function applyConfigIfChanged(nextConfig) {
+    if (sameConfig(nextConfig, config)) return false;
+    config = nextConfig;
+    applyTexts(config);
+    buildWheel(config);
+    return true;
+  }
+  function requestLiveConfig(options) {
+    options = options || {};
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    var timeoutId;
+    var timeout = new Promise(function (_, reject) {
+      timeoutId = setTimeout(function () {
+        if (controller) controller.abort();
+        reject(new Error("Actualizarea premiilor a expirat"));
+      }, LIVE_CONFIG_TIMEOUT_MS);
     });
-    window.addEventListener("focus", function () { refreshFromSheet(false); });
-    window.addEventListener("pageshow", function (e) { if (e.persisted) refreshFromSheet(true); }); // bfcache restore
-    setInterval(function () { refreshFromSheet(false); }, 120000);   // heartbeat backstop
+    var request = loadFromSheet({
+      signal: controller ? controller.signal : null,
+      requireLivePrizes: true,
+      loadTexts: options.loadTexts !== false,
+      textWaitMs: options.textWaitMs,
+      baseConfig: config
+    });
+    return Promise.race([request, timeout]).then(function (cfg) {
+      clearTimeout(timeoutId);
+      return cfg;
+    }, function (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    });
+  }
+  function getFreshConfig() {
+    if (liveConfigRequest) return liveConfigRequest;
+    // Text updates are useful but non-critical. Do not let a slow optional
+    // Texts tab prevent the active wheel from getting the latest prizes.
+    liveConfigRequest = requestLiveConfig({ loadTexts: true, textWaitMs: 400 });
+    return liveConfigRequest.then(function (cfg) {
+      liveConfigRequest = null;
+      return cfg;
+    }, function (error) {
+      liveConfigRequest = null;
+      throw error;
+    });
+  }
+  function getFreshConfigForSpin() {
+    // Deliberately do not share the background request. A spin must initiate
+    // its own cache-busted read of the Prizes CSV immediately before selection.
+    return requestLiveConfig({ loadTexts: false });
+  }
+  function refreshIfIdle(force) {
+    if (document.visibilityState !== "visible") return;
+    if (spinning || preparingSpin || result.classList.contains("show")) return;
+    var now = Date.now();
+    if (now - lastBackgroundRefresh < 1000) return;                // focus and visibility often arrive together
+    lastBackgroundRefresh = now;
+    getFreshConfig().then(function (cfg) {
+      if (spinning || preparingSpin || result.classList.contains("show")) return;
+      applyConfigIfChanged(cfg);
+    }).catch(function () {});
+  }
+  if (SHEET.prizesUrl) {
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") refreshIfIdle(true);
+    });
+    window.addEventListener("focus", function () { refreshIfIdle(true); });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) refreshIfIdle(true); }); // bfcache restore
+    setInterval(function () {
+      refreshIfIdle(false);
+    }, 60000);                                                       // active-tab heartbeat
   }
 })();
 </script>

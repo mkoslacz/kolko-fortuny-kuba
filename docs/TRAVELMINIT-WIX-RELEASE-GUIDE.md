@@ -2,14 +2,14 @@
 
 ## 1. Two independent wheels
 
-### Legacy fallback — do not change
+### Legacy fallback — keep its URL and Sheet
 
 The existing fallback remains at:
 
 `https://mateuszkoslacz.com/kolko-fortuny-kuba/travelminit.html`
 
-It keeps using the existing legacy Google Sheet. Do not change its code, URL, or Sheet. It is the
-emergency fallback.
+It keeps using the existing legacy Google Sheet and is the emergency fallback. Do not point it at
+the new campaign Sheet or replace its URL in Wix unless rolling back deliberately.
 
 ### New campaign wheel
 
@@ -84,8 +84,16 @@ Send the two published CSV URLs to Engineering once. Do not create a `Version` t
 or a new CSV URL for ordinary campaign edits.
 
 Google automatically republishes Sheet edits; Google says this can take a few minutes. The wheel
-also requests a fresh CSV URL on load, when the tab regains focus, and every two minutes, so the
-browser and CDN cannot keep serving an old cached response.
+uses a cache-busted CSV request on load, when the visible tab regains focus, and every 60 seconds
+while it is visible and idle. More importantly, each spin makes its own fresh request for `Prizes`
+immediately before selecting a segment. It waits up to 3.5 seconds; if no valid live prize list is
+available, it does not draw and tells the visitor to retry. A slow or unavailable `Texts` tab never
+blocks the prize check.
+
+This prevents an old browser session from drawing from its in-memory prize list. It is not an
+atomic stock-reservation system: Google publication can still take time, and two visitors can read
+the same last available row at the same time. A strict per-prize limit needs a server-side claim
+endpoint before the spin starts.
 
 ## 4. Initial engineering release
 
