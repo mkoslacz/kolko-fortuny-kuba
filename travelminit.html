@@ -14,17 +14,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
-<!--
-  ┌──────────────────────────────────────────────────────────────────────┐
-  │  EDITOR: add ?edit to the URL to open the prize editor.                │
-  │  e.g.  https://.../travelminit.html?edit                               │
-  │  3 slot types: "premiu mare" (big prize + link), "cupon" (coupon code  │
-  │  shown to the user + link), "try again" (no link). Edit, click          │
-  │  "Aplică pe roată", then "Copiază linkul" and paste it on the static    │
-  │  page. The whole configuration travels inside the link's #cfg= hash.    │
-  └──────────────────────────────────────────────────────────────────────┘
--->
-
 <style>
   :root {
     --orange: #f8980d;
@@ -290,48 +279,7 @@
   @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
   @keyframes tmfadein { from { opacity: 0; } to { opacity: 1; } }
 
-  /* ---------- Editor (visible only with ?edit) ---------- */
-  .editor {
-    display: none;
-    width: min(94vw, 720px);
-    margin-top: 30px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(248,152,13,0.35);
-    border-radius: 16px;
-    padding: 18px 18px 22px;
-    text-align: left;
-  }
-  body.edit .editor { display: block; }
-  .editor h2 { font-family:'Poppins',sans-serif; font-size: 18px; margin: 0 0 4px; color: var(--orange); }
-  .editor .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
-  .editor label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
-  .editor input, .editor textarea, .editor select {
-    width: 100%; padding: 9px 11px; border-radius: 9px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(0,0,0,0.28); color: #fff; font: inherit; font-size: 14px;
-  }
-  .editor textarea { min-height: 64px; resize: vertical; }
-  .editor fieldset {
-    border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
-    padding: 8px 14px 14px; margin: 12px 0;
-  }
-  .editor legend { padding: 0 8px; font-family:'Poppins',sans-serif; font-weight: 700; font-size: 14px; }
-  .editor legend .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
-  .tag.prize { background: var(--orange); color: #43130f; }
-  .tag.coupon { background: var(--purple); color: #fff; }
-  .tag.tryagain { background: #fff; color: var(--purple); }
-  .row2 { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
-  .editor .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-  .btn {
-    font-family:'Poppins',sans-serif; font-weight: 800; font-size: 14px;
-    border: none; border-radius: 999px; padding: 11px 20px; cursor: pointer;
-  }
-  .btn-primary { background: linear-gradient(180deg,#ffce86,var(--orange) 45%,#d9830a); color:#43130f; }
-  .btn-ghost { background: rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.22); }
-  .linkout { width:100%; margin-top:12px; font-size:12px; }
-  .copied { color: #7ee08a; font-size: 13px; font-weight: 700; margin-left: 6px; }
-
-  /* Wheel-only mode (?bare=1 or BARE=true): hide page text/footer, embed just the wheel as a box */
+  /* Wheel-only mode (set BARE=true in this file): hide page text/footer. */
   body.bare { padding-top: 14px; }
   body.bare .topline, body.bare h1, body.bare .body-copy, body.bare footer { display: none; }
   body.bare.pre-live .prelive-copy .topline,
@@ -388,31 +336,13 @@
 
   <footer>Travelminit · Roata vacanțelor 🎡</footer>
 
-  <!-- Editor (only when ?edit is in the URL) -->
-  <section class="editor" id="editor">
-    <h2>✎ Editor premii</h2>
-    <p class="hint">
-      Schimbă textele și premiile, apasă <b>„Aplică pe roată"</b> ca să previzualizezi, apoi
-      <b>„Copiază linkul"</b> și pune linkul pe pagina statică. Toată configurarea e salvată în link —
-      în fiecare zi editezi, copiezi linkul nou și îl actualizezi pe pagină.
-      Tipuri de slot: <b>premiu mare</b> (link), <b>cupon</b> (cod afișat + link), <b>try again</b> (fără link).
-    </p>
-    <div id="editorFields"></div>
-    <div class="actions">
-      <button class="btn btn-primary" id="applyBtn">Aplică pe roată</button>
-      <button class="btn btn-primary" id="copyBtn">Copiază linkul <span class="copied" id="copiedMsg" style="display:none">copiat ✓</span></button>
-      <button class="btn btn-ghost" id="resetBtn">Resetează</button>
-    </div>
-    <input class="linkout" id="linkOut" readonly placeholder="linkul pentru pagina statică va apărea aici" />
-  </section>
-
   <canvas id="confetti"></canvas>
 
 <script>
 (function () {
   "use strict";
 
-  // ---------- Default configuration (placeholders – the editor overrides these) ----------
+  // ---------- Default configuration (fallback until the Sheets load) ----------
   var DEFAULT_CONFIG = {
     texts: {
       topline: "Roata vacanțelor",
@@ -450,8 +380,7 @@
   //  GOOGLE SHEET — this legacy fallback intentionally keeps its existing
   //  published-CSV links below. Do not replace them with a new campaign Sheet.
   //  Status is permanently wired to the legacy Sheet's separately published
-  //  CSV tab. It applies to every normal legacy URL; no Wix query parameters
-  //  are needed. The editor (?edit) deliberately bypasses the gate.
+  //  CSV tab. It applies to every visit; the URL carries no configuration.
   //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link)
   //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional.
   //      Pre-live keys: preLiveTopline, preLiveHeadline, preLiveBody,
@@ -464,37 +393,12 @@
     statusUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1964190413&single=true&output=csv"
   };
 
-  // Show ONLY the wheel (hide the heading / body / footer) — use this when you build
-  // the rest of the page in Wix and embed just the wheel as a box. Also via ?bare=1.
+  // Show ONLY the wheel (hide the heading / body / footer) when this static
+  // file is deliberately configured as a wheel-only Wix embed.
   var BARE = false;
 
-  // ---------- Unicode-safe base64 (config travels inside the link) ----------
-  function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
-  function b64decode(str) { return decodeURIComponent(escape(atob(str))); }
-
-  function readConfigFromHash() {
-    try {
-      var m = location.hash.match(/cfg=([^&]+)/);
-      if (!m) return null;
-      var obj = JSON.parse(b64decode(decodeURIComponent(m[1])));
-      if (!obj || !obj.slots || !obj.slots.length) return null;
-      var t = obj.texts || {};
-      Object.keys(DEFAULT_CONFIG.texts).forEach(function (k) {
-        if (t[k] === undefined || t[k] === null) t[k] = DEFAULT_CONFIG.texts[k];
-      });
-      obj.texts = t;
-      return obj;
-    } catch (e) { return null; }
-  }
-
   function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
-
-  // A link copied from the editor carries its complete copy in #cfg.  That
-  // configuration is deliberately authoritative: the legacy "Texte" tab
-  // must not overwrite it later during the 60-second / focus refreshes.
-  // Prizes and Status continue to refresh normally.
-  var formConfig = readConfigFromHash();
-  var config = formConfig || deepCopy(DEFAULT_CONFIG);
+  var config = deepCopy(DEFAULT_CONFIG);
 
   // ---------- Geometry ----------
   var CX = 200, CY = 200, R = 196;
@@ -901,106 +805,6 @@
     else { ctx.clearRect(0, 0, canvas.width, canvas.height); rafId = null; }
   }
 
-  // ---------- Editor (?edit) ----------
-  function field(label, id, val) { return '<label>' + esc(label) + '</label><input id="' + id + '" value="' + attr(val) + '" />'; }
-  function area(label, id, val) { return '<label>' + esc(label) + '</label><textarea id="' + id + '">' + esc(val || "") + '</textarea>'; }
-  function attr(v) { return esc(v == null ? "" : v).replace(/"/g, "&quot;"); }
-  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
-
-  function buildEditor() {
-    var wrap = document.getElementById("editorFields");
-    var t = config.texts;
-    var html = "";
-    html += field("Text mic (sus)", "t_topline", t.topline);
-    html += field("Titlu (headline)", "t_headline", t.headline);
-    html += area("Text (paragrafe pe linii separate)", "t_body", t.body);
-    html += '<div class="row2">' + field("Buton", "t_spinButton", t.spinButton) + field("Centru", "t_hub", t.hub) + '</div>';
-    html += '<div class="row2">' + field("Buton «premiu mare»", "t_ctaPrize", t.ctaPrize) + field("Buton «cupon»", "t_ctaCoupon", t.ctaCoupon) + '</div>';
-    html += field("Titlu «Mai încearcă»", "t_taTitle", t.tryAgainTitle);
-    html += area("Descriere «Mai încearcă»", "t_taDesc", t.tryAgainDesc);
-    html += '<fieldset><legend>Ecran înainte de lansare (Status = 0)</legend>';
-    html += field("Text mic (sus)", "t_preLiveTopline", t.preLiveTopline);
-    html += field("Titlu", "t_preLiveHeadline", t.preLiveHeadline);
-    html += area("Text", "t_preLiveBody", t.preLiveBody);
-    html += '</fieldset>';
-
-    config.slots.forEach(function (s, i) {
-      var typ = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
-      var tagText = typ === "tryagain" ? "try again" : (typ === "coupon" ? "cupon" : "premiu mare");
-      html += '<fieldset><legend>Slot ' + (i + 1) + ' <span class="tag ' + typ + '">' + tagText + '</span></legend>';
-      html += '<div class="row2">';
-      html += '<div><label>Tip</label><select id="s_type_' + i + '">' +
-                '<option value="prize"' + (typ === "prize" ? " selected" : "") + '>premiu mare</option>' +
-                '<option value="coupon"' + (typ === "coupon" ? " selected" : "") + '>cupon</option>' +
-                '<option value="tryagain"' + (typ === "tryagain" ? " selected" : "") + '>try again</option>' +
-              '</select></div>';
-      html += '<div><label>Iconiță (emoji)</label><input id="s_icon_' + i + '" value="' + attr(s.icon) + '" /></div>';
-      html += '</div>';
-      html += field("Etichetă (pe roată)", "s_label_" + i, s.label);
-      html += field("Titlu rezultat", "s_title_" + i, s.title);
-      html += area("Descriere rezultat", "s_desc_" + i, s.desc);
-      html += field("Cod cupon (doar pentru tip „cupon\")", "s_coupon_" + i, s.coupon);
-      html += field("Link (unde duce premiul)", "s_url_" + i, s.url);
-      html += '</fieldset>';
-    });
-    wrap.innerHTML = html;
-  }
-
-  function gatherConfig() {
-    // Start from the current texts so any key without an editor field survives
-    // "Aplică pe roată" instead of being silently dropped.
-    var c = { texts: deepCopy(config.texts), slots: [] };
-    c.texts.topline = val("t_topline");
-    c.texts.headline = val("t_headline");
-    c.texts.body = val("t_body");
-    c.texts.spinButton = val("t_spinButton");
-    c.texts.hub = val("t_hub");
-    c.texts.ctaPrize = val("t_ctaPrize");
-    c.texts.ctaCoupon = val("t_ctaCoupon");
-    c.texts.tryAgainTitle = val("t_taTitle");
-    c.texts.tryAgainDesc = val("t_taDesc");
-    c.texts.preLiveTopline = val("t_preLiveTopline");
-    c.texts.preLiveHeadline = val("t_preLiveHeadline");
-    c.texts.preLiveBody = val("t_preLiveBody");
-    for (var i = 0; i < config.slots.length; i++) {
-      c.slots.push({
-        type: val("s_type_" + i),
-        icon: val("s_icon_" + i),
-        label: val("s_label_" + i),
-        title: val("s_title_" + i),
-        desc: val("s_desc_" + i),
-        coupon: val("s_coupon_" + i),
-        url: val("s_url_" + i)
-      });
-    }
-    return c;
-  }
-
-  function initEditor() {
-    document.body.classList.add("edit");
-    buildEditor();
-    document.getElementById("applyBtn").addEventListener("click", function () {
-      config = gatherConfig();
-      applyTexts(config); buildWheel(config); buildEditor();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-    document.getElementById("copyBtn").addEventListener("click", function () {
-      config = gatherConfig();
-      applyTexts(config); buildWheel(config);
-      var link = location.origin + location.pathname + "#cfg=" + b64encode(JSON.stringify(config));
-      var out = document.getElementById("linkOut");
-      out.value = link; out.select();
-      var ok = copyText(link);
-      var msg = document.getElementById("copiedMsg");
-      if (ok) { msg.style.display = "inline"; setTimeout(function () { msg.style.display = "none"; }, 2000); }
-    });
-    document.getElementById("resetBtn").addEventListener("click", function () {
-      config = deepCopy(DEFAULT_CONFIG);
-      applyTexts(config); buildWheel(config); buildEditor();
-      document.getElementById("linkOut").value = "";
-    });
-  }
-
   // ---------- Google Sheet loading ----------
   var cacheBustSerial = 0;
   function fetchCSV(url, signal) {
@@ -1118,6 +922,10 @@
     var statusColumn = colIndex(rows[0], ["status", "live", "islive", "campaignstatus"]);
     var r, c, value;
     if (statusColumn >= 0) {
+      // Accept both common Google Sheets layouts:
+      //   live\n0  (column) and live,0 (the existing legacy Status tab).
+      value = statusValue(rows[0][statusColumn + 1]);
+      if (value !== null) return value;
       for (r = 1; r < rows.length; r++) {
         value = statusValue(rows[r][statusColumn]);
         if (value !== null) return value;
@@ -1181,7 +989,7 @@
   }
 
   function refreshTextsAsync() {
-    if (!SHEET.textsUrl || formConfig) return;
+    if (!SHEET.textsUrl) return;
     var serial = ++textRefreshSerial;
     fetchCSV(SHEET.textsUrl).then(function (text) {
       if (serial !== textRefreshSerial) return;
@@ -1200,22 +1008,14 @@
   }
 
   // ---------- Init ----------
-  var qp = new URLSearchParams(location.search);
-  if (qp.get("prizes")) SHEET.prizesUrl = qp.get("prizes");
-  if (qp.get("texts")) SHEET.textsUrl = qp.get("texts");
-  if (qp.get("status")) SHEET.statusUrl = qp.get("status");
-  // The editor is an internal preview: it deliberately bypasses the public
-  // release gate so it remains usable while the campaign is pre-live.
-  statusGateEnabled = !!SHEET.statusUrl && !qp.has("edit");
-  if (qp.has("bare") || BARE) document.body.classList.add("bare");
+  // All public configuration comes from the fixed Premii, Texte and Status
+  // Sheet tabs above. URL query/hash values intentionally have no effect.
+  statusGateEnabled = !!SHEET.statusUrl;
+  if (BARE) document.body.classList.add("bare");
 
   function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
 
-  if (qp.has("edit")) {
-    campaignLive = true;
-    render(config);
-    initEditor();
-  } else if (SHEET.prizesUrl || statusGateEnabled) {
+  if (SHEET.prizesUrl || statusGateEnabled) {
     // Show the wheel instantly with shimmering placeholders, then fade in the real
     // content once the sheet loads — and only then enable the buttons.
     buildSkeleton();
