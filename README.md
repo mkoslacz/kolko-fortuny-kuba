@@ -28,6 +28,9 @@ There are two deliberately isolated Travelminit wheels:
 
 - **Legacy fallback:** [`travelminit.html`](travelminit.html) continues to read the existing
   legacy Google Sheet. Do not use it for a new campaign and do not point it at new data.
+- **Weighted legacy V2:** [`travelminitv2.html`](travelminitv2.html) reads the same legacy Sheet,
+  but selects visible prize slices by the `Premii.probabilitate` column. See
+  [`docs/TRAVELMINIT-V2-WEIGHTED-PRIZES.md`](docs/TRAVELMINIT-V2-WEIGHTED-PRIZES.md).
 - **New campaign source:** [`travelminit-new.html`](travelminit-new.html) has no legacy Sheet
   URL. It is used only to create a new, immutable campaign release.
 

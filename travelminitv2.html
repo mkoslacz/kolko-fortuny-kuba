@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🎡 Travelminit — Roata vacanțelor</title>
+<meta name="description" content="Învârte roata vacanțelor Travelminit și câștigă cazări la 9 RON, cupoane și reduceri. Mult noroc, călătorule!" />
+<meta property="og:title" content="🎡 Travelminit — Roata vacanțelor" />
+<meta property="og:description" content="Învârte roata și rezervă-ți premiul: vacanțe la 9 RON, cupoane și reduceri." />
+<meta property="og:type" content="website" />
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --orange: #f8980d;
+    --orange-soft: #ffbe5c;
+    --purple: #71246b;
+    --purple-deep: #4a1745;
+    --bg-0: #2a0e29;
+    --bg-1: #5a1c55;
+    --ink: #ffffff;
+    --muted: #e7d4e4;
+    --card: rgba(40, 14, 39, 0.78);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; overflow-x: hidden; max-width: 100%; }
+  body {
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(1100px 600px at 50% -8%, #7e2a77 0%, transparent 60%),
+      radial-gradient(900px 500px at 85% 115%, #8a2d2d00 0%, transparent 55%),
+      linear-gradient(160deg, var(--bg-0), var(--bg-1));
+    background-color: var(--bg-0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+    overflow-x: hidden;
+  }
+  .topline {
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--orange);
+    margin: 2px 0 8px;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(24px, 5.2vw, 44px);
+    line-height: 1.08;
+    margin: 0 0 12px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(248, 152, 13, 0.25);
+    max-width: 760px;
+  }
+  .body-copy {
+    color: var(--muted);
+    font-size: clamp(13px, 2.2vw, 16px);
+    line-height: 1.55;
+    text-align: center;
+    margin: 0 0 22px;
+    max-width: 640px;
+  }
+  .body-copy p { margin: 0 0 8px; }
+  .body-copy p:last-child { margin-bottom: 0; }
+  .body-copy b { color: #fff; }
+
+  /* This copy is shown instead of the campaign copy while Status is 0. It is
+     deliberately separate from the normal header so a Wix "wheel-only" embed
+     still explains why the button is unavailable. */
+  .prelive-copy { display: none; width: 100%; text-align: center; }
+  .prelive-copy .topline,
+  .prelive-copy h1,
+  .prelive-copy .body-copy { margin-left: auto; margin-right: auto; text-align: center; }
+  body.pre-live > .topline,
+  body.pre-live > h1,
+  body.pre-live > .body-copy { display: none; }
+  body.pre-live .prelive-copy { display: block; }
+  body.pre-live .spin-btn { display: none; }
+  body.pre-live .pointer { opacity: 0.62; }
+  body.pre-live .hub { cursor: default; }
+
+  .stage {
+    position: relative;
+    width: min(88vw, 470px);
+    max-width: 100%;
+    margin: 0 auto 6px;
+    padding: 12px;                 /* the gold rim */
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d, #ffd89b, #c8780a, #f8980d);
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.22), 0 0 0 2px rgba(255,255,255,0.07), 0 26px 54px rgba(0,0,0,0.5);
+  }
+  .pointer {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    z-index: 5;
+    border-left: 19px solid transparent;
+    border-right: 19px solid transparent;
+    border-top: 34px solid var(--orange);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  }
+  .pointer::after {
+    content: "";
+    position: absolute;
+    top: -42px; left: -8px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 4px rgba(248, 152, 13, 0.25);
+  }
+  .wheel {
+    position: relative;
+    z-index: 2;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;          /* on the SVG (not a flex item) — reliable in WebKit */
+    border-radius: 50%;
+    transform: rotate(0deg);
+    transition: transform 6s cubic-bezier(0.12, 0.62, 0.06, 1);
+    will-change: transform;
+  }
+  .wheel text { user-select: none; pointer-events: none; }
+
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22%; height: 22%;
+    border-radius: 50%;
+    z-index: 6;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(10px, 2.5vw, 15px);
+    letter-spacing: 0;
+    padding: 0 4px;
+    background: radial-gradient(circle at 35% 30%, #ffbe5c, var(--orange) 48%, #c8780a 100%);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 8px rgba(0,0,0,0.25), inset 0 3px 8px rgba(255,255,255,0.45);
+    transition: transform 0.12s ease;
+  }
+  .hub:hover { transform: translate(-50%, -50%) scale(1.05); }
+  .hub:active { transform: translate(-50%, -50%) scale(0.96); }
+  .hub:disabled { cursor: not-allowed; filter: saturate(0.7) brightness(0.92); }
+
+  .spin-btn {
+    margin-top: 18px;
+    padding: 15px 42px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 0.06em;
+    color: #43130f;
+    background: linear-gradient(180deg, #ffce86, var(--orange) 45%, #d9830a);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(248, 152, 13, 0.4), inset 0 -3px 6px rgba(0,0,0,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s;
+  }
+  .spin-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(248,152,13,0.5); }
+  .spin-btn:active { transform: translateY(0); }
+  .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .sync-notice {
+    width: min(92vw, 540px);
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #ffdeaa;
+    font-size: 13px;
+    line-height: 1.45;
+    opacity: 0;
+    transition: max-height 0.2s ease, margin 0.2s ease, opacity 0.2s ease;
+  }
+  .sync-notice.show { max-height: 48px; margin: 10px 0 -8px; opacity: 1; }
+
+  .result {
+    margin-top: 26px;
+    width: min(92vw, 540px);
+    background: var(--card);
+    border: 1px solid rgba(248, 152, 13, 0.35);
+    border-radius: 20px;
+    padding: 22px 24px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .result.show { opacity: 1; transform: translateY(0) scale(1); }
+  .result.win {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 1px var(--orange), 0 20px 60px rgba(248,152,13,0.35);
+  }
+  .result .emoji { font-size: 52px; line-height: 1; }
+  .result .r-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    font-size: clamp(21px, 4.6vw, 29px);
+    margin: 8px 0 8px;
+    color: #fff;
+  }
+  .result .r-desc { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 14px; }
+
+  /* Coupon code chip */
+  .coupon-box {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 0 16px;
+  }
+  .coupon-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .coupon-code {
+    font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.12em;
+    color: #fff; background: rgba(248,152,13,0.16);
+    border: 1.5px dashed var(--orange); padding: 7px 16px; border-radius: 10px;
+  }
+  .coupon-copy {
+    font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 999px; padding: 7px 14px;
+  }
+  .coupon-copy:hover { background: rgba(255,255,255,0.2); }
+
+  .cta {
+    display: none;
+    text-decoration: none;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #43130f;
+    background: linear-gradient(180deg, #ffce86, var(--orange) 45%, #d9830a);
+    padding: 13px 30px;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(248,152,13,0.42);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .result .cta[href] { display: inline-block; }   /* CTA follows the link, not the win styling */
+  .cta:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(248,152,13,0.55); }
+
+  footer {
+    margin-top: 30px;
+    color: rgba(231,212,228,0.5);
+    font-size: 12px;
+    text-align: center;
+  }
+
+  canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+  /* Skeleton + shimmer loading: the wheel shows instantly with placeholders, then the real content fades in */
+  .wheel-shimmer {
+    position: absolute; inset: 12px; border-radius: 50%; z-index: 3; pointer-events: none; display: none;
+    background: linear-gradient(105deg, rgba(255,255,255,0) 42%, rgba(255,255,255,0.40) 50%, rgba(255,255,255,0) 58%);
+    background-size: 220% 100%; animation: tmsweep 1.15s linear infinite;
+  }
+  .copy-shimmer {
+    display: none;
+    width: min(100%, 640px);
+    margin: 2px auto 22px;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .copy-shimmer span {
+    display: block;
+    border-radius: 999px;
+    background: linear-gradient(105deg, rgba(255,255,255,0.10) 42%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0.10) 58%);
+    background-size: 220% 100%;
+    animation: tmsweep 1.15s linear infinite;
+  }
+  .copy-shimmer .shimmer-topline { width: 132px; height: 12px; }
+  .copy-shimmer .shimmer-title { width: min(88%, 520px); height: 38px; }
+  .copy-shimmer .shimmer-body { width: 100%; height: 14px; }
+  .copy-shimmer .shimmer-body.short { width: 72%; }
+  body.skeleton .wheel-shimmer { display: block; }
+  .skel-pill { animation: tmpulse 1.2s ease-in-out infinite; }
+  .topline, h1, .body-copy { transition: opacity 0.35s ease; }
+  /* Copy is owned by Texte + Status, while the wheel is owned by
+     Status + Premii. The two placeholders must therefore resolve separately:
+     a ready header may appear over a still-loading wheel, and vice versa.
+     Status stays part of the copy gate so a delayed `live=0` can never expose
+     the campaign's live copy before the safety gate is known. */
+  body.copy-loading > .topline,
+  body.copy-loading > h1,
+  body.copy-loading > .body-copy,
+  body.copy-loading .prelive-copy { display: none; }
+  body.copy-loading .copy-shimmer { display: flex; }
+  body.skeleton .spin-btn, body.skeleton .hub { opacity: 0.5; pointer-events: none; }
+  @keyframes tmsweep { 0% { background-position: 150% 0; } 100% { background-position: -150% 0; } }
+  @keyframes tmpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+  @keyframes tmfadein { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Wheel-only mode (set BARE=true in this file): hide page text/footer. */
+  body.bare { padding-top: 14px; }
+  body.bare .topline, body.bare h1, body.bare .body-copy, body.bare .copy-shimmer, body.bare footer { display: none; }
+  body.bare.pre-live .prelive-copy .topline,
+  body.bare.pre-live .prelive-copy h1,
+  body.bare.pre-live .prelive-copy .body-copy { display: block; }
+
+  /* ---------- Mobile: compact the header so the wheel + button fit ---------- */
+  @media (max-width: 480px) {
+    body { padding: 12px 14px 30px; }
+    .topline { letter-spacing: 0.22em; font-size: 11px; margin: 0 0 6px; }
+    h1 { font-size: clamp(21px, 6.4vw, 30px); margin: 0 0 8px; }
+    .body-copy { font-size: 13px; line-height: 1.45; margin: 0 0 14px; }
+    .body-copy p { margin: 0 0 6px; }
+    .stage { width: min(82vw, 440px); }
+    .spin-btn { margin-top: 14px; padding: 13px 34px; font-size: 16px; }
+    .result { margin-top: 20px; padding: 20px 18px; }
+    .result .emoji { font-size: 46px; }
+    .coupon-code { font-size: 18px; padding: 6px 14px; }
+  }
+</style>
+</head>
+<body class="skeleton texts-loading copy-loading">
+  <div class="topline" id="topline">Roata vacanțelor</div>
+  <h1 id="headline"></h1>
+  <div class="body-copy" id="bodyCopy"></div>
+
+  <div class="prelive-copy" id="preLiveCopy" role="status" aria-live="polite">
+    <div class="topline" id="preLiveTopline">Roata vacanțelor</div>
+    <h1 id="preLiveHeadline">Loteria nu a început încă</h1>
+    <div class="body-copy" id="preLiveBody"></div>
+  </div>
+
+  <div class="copy-shimmer" aria-hidden="true">
+    <span class="shimmer-topline"></span>
+    <span class="shimmer-title"></span>
+    <span class="shimmer-body"></span>
+    <span class="shimmer-body"></span>
+    <span class="shimmer-body short"></span>
+  </div>
+
+  <div class="stage">
+    <div class="pointer"></div>
+    <svg class="wheel" id="wheel" viewBox="0 0 400 400" aria-label="Roata vacanțelor"></svg>
+    <div class="wheel-shimmer" id="wheelShimmer" aria-hidden="true"></div>
+    <button class="hub" id="hub" aria-label="Învârte roata">Învârte</button>
+  </div>
+
+  <button class="spin-btn" id="spinBtn">Învârte roata</button>
+  <div class="sync-notice" id="syncNotice" role="status" aria-live="polite"></div>
+
+  <div class="result" id="result" role="status" aria-live="polite">
+    <div class="emoji" id="rEmoji">🎁</div>
+    <div class="r-title" id="rTitle">Premiul tău te așteaptă...</div>
+    <p class="r-desc" id="rDesc">Apasă «Învârte roata» și pornește în vacanță!</p>
+    <div class="coupon-box" id="rCoupon">
+      <span class="coupon-label">Cod cupon:</span>
+      <span class="coupon-code" id="rCouponCode"></span>
+      <button class="coupon-copy" id="rCouponCopy" type="button">Copiază</button>
+    </div>
+    <a class="cta" id="rCta" target="_blank" rel="noopener">Rezervă acum →</a>
+  </div>
+
+  <footer>Travelminit · Roata vacanțelor 🎡</footer>
+
+  <canvas id="confetti"></canvas>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Default configuration (fallback until the Sheets load) ----------
+  var DEFAULT_CONFIG = {
+    texts: {
+      topline: "Roata vacanțelor",
+      headline: "",
+      body: "",
+      spinButton: "Învârte roata",
+      hub: "Învârte",
+      ctaPrize: "Rezervă acum →",
+      ctaCoupon: "Folosește cuponul →",
+      tryAgainTitle: "Mai încearcă!",
+      tryAgainDesc: "Norocul e pe aproape — învârte roata din nou și prinde-ți vacanța!",
+      preLiveTopline: "Roata vacanțelor",
+      preLiveHeadline: "Loteria nu a început încă",
+      preLiveBody: "Rămâi aproape — revenim în curând!",
+      preLiveSpinButton: "În curând",
+      preLiveHub: "În curând"
+    },
+    // 10 slots. type: "prize" (big prize + link) | "coupon" (code + link) | "tryagain" (no link).
+    // Colors are by type: prize = orange, coupon = purple, tryagain = white.
+    slots: [
+      { type: "coupon", icon: "🎟️", label: "-50%", title: "Reducere 50%!", desc: "Felicitări! Ai deblocat 50% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA50", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" },
+      { type: "coupon", icon: "🎟️", label: "-30%", title: "Reducere 30%!", desc: "Felicitări! Ai deblocat 30% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA30", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", coupon: "", url: "" },
+      { type: "coupon", icon: "🎟️", label: "-20%", title: "Reducere 20%!", desc: "Felicitări! Ai deblocat 20% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA20", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" },
+      { type: "coupon", icon: "🎟️", label: "-15%", title: "Reducere 15%!", desc: "Felicitări! Ai deblocat 15% reducere. Folosește codul de mai jos pe Travelminit:", coupon: "VARA15", url: "https://travelminit.ro" },
+      { type: "tryagain", icon: "🔄", label: "Mai încearcă", title: "", desc: "", coupon: "", url: "" },
+      { type: "coupon", icon: "🎁", label: "Noapte cadou", title: "O noapte cadou!", desc: "Felicitări! Ai deblocat o noapte cadou. Folosește codul de mai jos pe Travelminit:", coupon: "NOAPTE", url: "https://travelminit.ro" },
+      { type: "prize",  icon: "🏖️", label: "Vacanță 9 RON", title: "Ai câștigat o vacanță la 9 RON!", desc: "Felicitări! Rezerv-o rapid, locurile sunt limitate:", coupon: "", url: "https://travelminit.ro/9ron" }
+    ]
+  };
+
+  // ───────────────────────────────────────────────────────────────────────
+  //  GOOGLE SHEET — V2 intentionally keeps the same existing campaign Sheet.
+  //  There is no configuration in the Wix URL.
+  //  Status is permanently wired to the legacy Sheet's separately published
+  //  CSV tab. It applies to every visit; the URL carries no configuration.
+  //    • Tab "Premii" → prizesUrl  (columns: tip, icon, eticheta, titlu, descriere, cod, link,
+  //      probabilitate). `probabilitate` is required by V2 and must sum to 100%.
+  //    • Tab "Texte"  → textsUrl   (columns: cheie, valoare) — optional.
+  //      Pre-live keys: preLiveTopline, preLiveHeadline, preLiveBody,
+  //      preLiveSpinButton, preLiveHub.
+  //    • Tab "Status" → statusUrl  (a single 0 before launch, or 1 when live) — optional.
+  // ───────────────────────────────────────────────────────────────────────
+  var SHEET = {
+    prizesUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=0&single=true&output=csv",
+    textsUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1352847307&single=true&output=csv",
+    statusUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQbHjNss9Z1q-QQapGwM-In2MGWkAY0tsXd7OpBORG277YXxnQnV4tuYY5XeyrZsw-GTEn0tyvdpRr4/pub?gid=1964190413&single=true&output=csv"
+  };
+
+  // Show ONLY the wheel (hide the heading / body / footer) when this static
+  // file is deliberately configured as a wheel-only Wix embed.
+  var BARE = false;
+
+  function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+  var config = deepCopy(DEFAULT_CONFIG);
+
+  // ---------- Geometry ----------
+  var CX = 200, CY = 200, R = 196;
+  var SEGMENTS, ANGLE;
+
+  function pt(deg, radius) {
+    var rad = (deg - 90) * Math.PI / 180;
+    return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function copyText(text) {
+    var ok = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try { navigator.clipboard.writeText(text); ok = true; } catch (e) {}
+    }
+    if (!ok) {
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    return ok;
+  }
+
+  var ORANGE = "#f8980d", PURPLE = "#71246b", WHITE = "#ffffff";
+
+  // ---------- DOM ----------
+  var wheel = document.getElementById("wheel");
+  var hub = document.getElementById("hub");
+  var spinBtn = document.getElementById("spinBtn");
+  var result = document.getElementById("result");
+  var rEmoji = document.getElementById("rEmoji");
+  var rTitle = document.getElementById("rTitle");
+  var rDesc = document.getElementById("rDesc");
+  var rCoupon = document.getElementById("rCoupon");
+  var rCouponCode = document.getElementById("rCouponCode");
+  var rCouponCopy = document.getElementById("rCouponCopy");
+  var rCta = document.getElementById("rCta");
+  var syncNotice = document.getElementById("syncNotice");
+  var syncNoticeTimer = null;
+
+  function setBodyCopy(el, text) {
+    el.innerHTML = "";
+    String(text || "").split("\n").forEach(function (line) {
+      if (!line.trim()) return;
+      var p = document.createElement("p");
+      p.textContent = line;
+      el.appendChild(p);
+    });
+  }
+
+  function applyTexts(cfg) {
+    document.getElementById("topline").textContent = cfg.texts.topline;
+    document.getElementById("headline").textContent = cfg.texts.headline;
+    setBodyCopy(document.getElementById("bodyCopy"), cfg.texts.body);
+    spinBtn.textContent = cfg.texts.spinButton;
+    hub.textContent = cfg.texts.hub;
+    document.title = "🎡 " + cfg.texts.topline + " — Travelminit";
+  }
+
+  function applyPreLiveTexts(cfg) {
+    document.getElementById("preLiveTopline").textContent = cfg.texts.preLiveTopline || DEFAULT_CONFIG.texts.preLiveTopline;
+    document.getElementById("preLiveHeadline").textContent = cfg.texts.preLiveHeadline || DEFAULT_CONFIG.texts.preLiveHeadline;
+    setBodyCopy(document.getElementById("preLiveBody"), cfg.texts.preLiveBody || DEFAULT_CONFIG.texts.preLiveBody);
+    document.title = "🎡 " + (cfg.texts.preLiveTopline || DEFAULT_CONFIG.texts.preLiveTopline) + " — Travelminit";
+  }
+
+  function colorFor(type) {
+    if (type === "tryagain") return { fill: WHITE, text: PURPLE };
+    if (type === "coupon") return { fill: PURPLE, text: "#ffffff" };
+    return { fill: ORANGE, text: "#43130f" }; // prize
+  }
+
+  // ---------- Build the wheel ----------
+  function buildWheel(cfg) {
+    wheel.setAttribute("aria-label", "Roata vacanțelor");
+    SEGMENTS = cfg.slots.length;
+    ANGLE = 360 / SEGMENTS;
+    var svg = "";
+    for (var k = 0; k < SEGMENTS; k++) {
+      var s = cfg.slots[k];
+      var col = colorFor(s.type);
+      var start = k * ANGLE, end = (k + 1) * ANGLE;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      var largeArc = ANGLE > 180 ? 1 : 0;
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 ' + largeArc + ' 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + col.fill + '" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+
+      var mid = start + ANGLE / 2;
+      if (s.icon) {
+        var ep = pt(mid, 168);
+        svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="23">' + esc(s.icon) + '</text>';
+      }
+      var flip = mid >= 180;
+      var rLabel = 94;                              // inner band — leaves room for the icon near the rim
+      var lr = flip ? 90 : -90;
+      var fs = s.label.length > 9 ? 11 : 13;        // shrink long labels so they don't reach the icon
+      var maxChars = 14;                            // keep wheel labels short — long text belongs in the result, not on the wheel
+      var lbl = s.label.length > maxChars ? s.label.slice(0, maxChars - 1).replace(/\s+$/, "") + "…" : s.label;
+      svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')">' +
+               '<text x="' + CX + '" y="' + (CY - rLabel) + '" transform="rotate(' + lr + ' ' + CX + ' ' + (CY - rLabel) + ')" text-anchor="middle" dominant-baseline="central" font-size="' + fs + '" font-weight="800" fill="' + col.text + '" font-family="Inter, sans-serif">' + esc(lbl) + '</text>' +
+             '</g>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // A deliberately non-interactive wheel for Status = 0. It never uses the
+  // live prize labels, so publishing the iframe early cannot reveal a prize.
+  function buildPreLiveWheel() {
+    var n = 10, ang = 360 / n, svg = "";
+    var icons = ["?", "✦", "?", "✦", "?", "✦", "?", "✦", "?", "✦"];
+    wheel.setAttribute("aria-label", "Roata vacanțelor — loteria nu a început încă");
+    for (var k = 0; k < n; k++) {
+      var col = k % 2 === 0 ? ORANGE : PURPLE;
+      var start = k * ang, end = (k + 1) * ang;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 0 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + col + '" opacity="0.72" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+      var ep = pt(start + ang / 2, 132);
+      svg += '<text x="' + ep[0].toFixed(2) + '" y="' + ep[1].toFixed(2) + '" text-anchor="middle" dominant-baseline="central" font-size="30" font-weight="900" fill="#ffffff" opacity="0.82" font-family="Poppins, sans-serif">' + icons[k] + '</text>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // ---------- Skeleton wheel (placeholder shown instantly while the sheet loads) ----------
+  function buildSkeleton() {
+    var n = 10, ang = 36, svg = "";
+    for (var k = 0; k < n; k++) {
+      var col = (k % 2 === 0) ? ORANGE : PURPLE;
+      var start = k * ang, end = (k + 1) * ang;
+      var p1 = pt(start, R), p2 = pt(end, R);
+      svg += '<path d="M' + CX + ' ' + CY + ' L' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2) +
+             ' A' + R + ' ' + R + ' 0 0 1 ' + p2[0].toFixed(2) + ' ' + p2[1].toFixed(2) +
+             ' Z" fill="' + col + '" opacity="0.5" stroke="rgba(0,0,0,0.16)" stroke-width="1.5"/>';
+      var mid = start + ang / 2;
+      svg += '<g transform="rotate(' + mid + ' ' + CX + ' ' + CY + ')"><rect class="skel-pill" x="' + (CX - 5) + '" y="' + (CY - 118) + '" width="10" height="48" rx="5" fill="#fff"/></g>';
+      var ep = pt(mid, 168);
+      svg += '<circle class="skel-pill" cx="' + ep[0].toFixed(2) + '" cy="' + ep[1].toFixed(2) + '" r="9" fill="#fff"/>';
+    }
+    svg += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>';
+    wheel.innerHTML = svg;
+  }
+
+  // ---------- Spin ----------
+  var spinning = false;
+  var preparingSpin = false;
+  var currentRotation = 0;
+  var campaignLive = true;
+  var statusGateEnabled = false;
+  // The header must know whether it should display the live or pre-live
+  // Texte copy. It may resolve before prizes, but never before Status.
+  var initialCampaignStatusKnown = false;
+  // Every status/prizes read gets a monotonically increasing serial. A late
+  // background response must never overwrite a newer strict pre-spin result.
+  var campaignStateRequestSerial = 0;
+  var lastAppliedCampaignStateSerial = 0;
+
+  function setDisabled(d) {
+    hub.disabled = d; spinBtn.disabled = d;
+    if (!campaignLive) {
+      hub.textContent = config.texts.preLiveHub || DEFAULT_CONFIG.texts.preLiveHub;
+      spinBtn.textContent = config.texts.preLiveSpinButton || DEFAULT_CONFIG.texts.preLiveSpinButton;
+      return;
+    }
+    hub.textContent = d ? "..." : config.texts.hub;
+  }
+
+  function resetWheelRotation() {
+    currentRotation = 0;
+    wheel.style.transition = "none";
+    wheel.style.transform = "rotate(0deg)";
+    void wheel.offsetWidth;
+    wheel.style.transition = "";
+  }
+
+  function enterPreLiveMode() {
+    campaignLive = false;
+    document.body.classList.add("pre-live");
+    result.classList.remove("show", "win");
+    rCoupon.style.display = "none";
+    rCta.removeAttribute("href");
+    applyPreLiveTexts(config);
+    resetWheelRotation();
+    buildPreLiveWheel();
+    setDisabled(true);
+  }
+
+  function finishInitialCopyLoad() {
+    if (initialTextsPending || !initialCampaignStatusKnown) return;
+    document.body.classList.remove("copy-loading");
+  }
+
+  function noteInitialCampaignStatus(isLive) {
+    // Only the first valid Status response owns the initial copy gate. Later
+    // state transitions still go through applyCampaignState(), with its
+    // serial guard, so an old background response cannot roll the UI back.
+    if (initialCampaignStatusKnown) return;
+    initialCampaignStatusKnown = true;
+    if (isLive) {
+      campaignLive = true;
+      document.body.classList.remove("pre-live");
+      applyTexts(config);
+    } else {
+      enterPreLiveMode();
+    }
+    finishInitialCopyLoad();
+  }
+
+  function acceptCampaignStateSerial(serial) {
+    if (typeof serial !== "number") return true;
+    if (serial < lastAppliedCampaignStateSerial) return false;
+    lastAppliedCampaignStateSerial = serial;
+    return true;
+  }
+
+  function applyCampaignState(state, options) {
+    options = options || {};
+    if (!acceptCampaignStateSerial(state && state.campaignStateRequestSerial)) return false;
+    if (!state || !state.live) {
+      enterPreLiveMode();
+      applyPendingTextsIfIdle();
+      return false;
+    }
+
+    var wasPreLive = !campaignLive;
+    campaignLive = true;
+    document.body.classList.remove("pre-live");
+    // A status/prizes request captures the texts that existed when it began.
+    // Keep the newest independently fetched Texts snapshot instead, otherwise
+    // a late prize response could roll its copy back.
+    var nextConfig = deepCopy(state.config);
+    nextConfig.texts = deepCopy(config.texts);
+    var changed = !sameConfig(nextConfig, config);
+    config = nextConfig;
+    if (wasPreLive) resetWheelRotation();
+    if (wasPreLive || changed) {
+      applyTexts(config);
+      buildWheel(config);
+    }
+    if (!options.keepControlsDisabled && !spinning && !preparingSpin) setDisabled(false);
+    applyPendingTextsIfIdle();
+    // Callers use this as an acceptance result, not as a "did the screen
+    // change" result. A current live snapshot is always safe to spin from.
+    return true;
+  }
+
+  function spin() {
+    if (spinning || preparingSpin) return;
+    if (hub.disabled || spinBtn.disabled) return;
+    if (!campaignLive) return;
+    if (!SHEET.prizesUrl) { startSpin(); return; }
+    preparingSpin = true;
+    setDisabled(true);
+
+    // Choose a segment only after this click's own strict live read succeeds.
+    // It must not reuse the focus/60-second background request: that request
+    // may already be a few seconds old when the player clicks Spin.
+    getFreshCampaignStateForSpin().then(function (state) {
+      preparingSpin = false;
+      if (!state.live) {
+        applyCampaignState(state);
+        return;
+      }
+      // Do not draw if this response lost to a newer accepted state. This is
+      // normally impossible while preparingSpin is true, but keeps the guard
+      // correct if an event is delivered just as the request completes.
+      if (!applyCampaignState(state, { keepControlsDisabled: true })) return;
+      startSpin();
+    }, function (error) {
+      preparingSpin = false;
+      // With a Status URL configured, an unreadable status must fail closed:
+      // showing a harmless placeholder is safer than drawing a stale prize.
+      if (statusGateEnabled) {
+        if (acceptCampaignStateSerial(error && error.campaignStateRequestSerial)) enterPreLiveMode();
+      } else {
+        setDisabled(false);
+        showSyncNotice();
+      }
+      applyPendingTextsIfIdle();
+    });
+  }
+
+  // V2 stores normalized percentage points on every current slot. The parser
+  // guarantees either a valid Sheet distribution or equal fallback values, but
+  // retain a uniform defensive fallback here so an unexpected broken snapshot
+  // can never prevent a player from finishing a spin.
+  function pickProbabilityIndex(slots) {
+    var total = 0, i, value;
+    for (i = 0; i < slots.length; i++) {
+      value = Number(slots[i].probability);
+      if (!isFinite(value) || value < 0) return Math.floor(Math.random() * slots.length);
+      total += value;
+    }
+    if (!isFinite(total) || total <= 0) return Math.floor(Math.random() * slots.length);
+    var target = Math.random() * total;
+    var accumulated = 0;
+    for (i = 0; i < slots.length; i++) {
+      accumulated += Number(slots[i].probability);
+      if (target < accumulated || i === slots.length - 1) return i;
+    }
+    return slots.length - 1;
+  }
+
+  function startSpin() {
+    if (spinning) return;
+    spinning = true;
+    setDisabled(true);
+    result.classList.remove("show", "win");
+
+    var k = pickProbabilityIndex(config.slots);
+    var slot = config.slots[k];
+
+    var segCenter = k * ANGLE + ANGLE / 2;
+    var jitter = (Math.random() - 0.5) * (ANGLE * 0.6);
+    var targetMod = ((360 - (segCenter + jitter)) % 360 + 360) % 360;
+    var currentMod = ((currentRotation % 360) + 360) % 360;
+    var delta = ((targetMod - currentMod) % 360 + 360) % 360;
+    var spins = 5 + Math.floor(Math.random() * 2);
+
+    currentRotation += spins * 360 + delta;
+    wheel.style.transform = "rotate(" + currentRotation + "deg)";
+
+    var done = false;
+    function reveal() {
+      if (done) return;
+      done = true;
+      spinning = false;
+      setDisabled(false);
+      showResult(slot);
+      applyPendingTextsIfIdle();
+    }
+    wheel.addEventListener("transitionend", reveal, { once: true });
+    setTimeout(reveal, 6800);
+  }
+
+  function showResult(s) {
+    var type = s.type === "tryagain" ? "tryagain" : (s.type === "coupon" ? "coupon" : "prize");
+    var isWin = type !== "tryagain";
+
+    rEmoji.textContent = s.icon || (type === "tryagain" ? "🔄" : type === "coupon" ? "🎟️" : "🎁");
+
+    if (type === "tryagain") {
+      rTitle.textContent = config.texts.tryAgainTitle;
+      rDesc.textContent = config.texts.tryAgainDesc;
+      rCoupon.style.display = "none";
+      rCta.removeAttribute("href");
+    } else {
+      rTitle.textContent = s.title || s.label;
+      rDesc.textContent = s.desc || "";
+      if (s.coupon) {                          // any slot carrying a code shows it, not just "cupon"
+        rCouponCode.textContent = s.coupon;
+        rCoupon.style.display = "flex";
+      } else {
+        rCoupon.style.display = "none";
+      }
+      if (s.url) {
+        rCta.textContent = (type === "coupon") ? config.texts.ctaCoupon : config.texts.ctaPrize;
+        rCta.setAttribute("href", s.url);
+      } else {
+        rCta.removeAttribute("href");
+      }
+    }
+
+    result.classList.toggle("win", isWin && !!s.url);
+    void result.offsetWidth;
+    result.classList.add("show");
+    requestAnimationFrame(function () {
+      result.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    if (isWin) fireConfetti();
+  }
+
+  function showSyncNotice() {
+    syncNotice.textContent = "Premiile se actualizează. Încearcă din nou în câteva secunde.";
+    syncNotice.classList.add("show");
+    clearTimeout(syncNoticeTimer);
+    syncNoticeTimer = setTimeout(function () {
+      syncNotice.classList.remove("show");
+    }, 5000);
+  }
+
+  hub.addEventListener("click", spin);
+  spinBtn.addEventListener("click", spin);
+
+  rCouponCopy.addEventListener("click", function (e) {
+    e.stopPropagation();
+    copyText(rCouponCode.textContent);
+    var orig = rCouponCopy.textContent;
+    rCouponCopy.textContent = "Copiat ✓";
+    setTimeout(function () { rCouponCopy.textContent = orig; }, 1600);
+  });
+
+  // whole card clickable for wins (except the copy button / the CTA itself)
+  result.addEventListener("click", function (e) {
+    if (e.target === rCta || e.target === rCouponCopy) return;
+    var href = rCta.getAttribute("href");
+    if (result.classList.contains("win") && href) window.open(href, "_blank", "noopener");
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.code === "Space" || e.code === "Enter") && document.activeElement === document.body) {
+      e.preventDefault(); spin();
+    }
+  });
+
+  // ---------- Confetti ----------
+  var canvas = document.getElementById("confetti");
+  var ctx = canvas.getContext("2d");
+  var pieces = [], rafId = null;
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+  function fireConfetti() {
+    var colors = ["#f8980d", "#ffd89b", "#71246b", "#ffffff", "#b5559f"];
+    var emojis = ["🎉", "🏖️", "✈️", "🧳", "🥳"];
+    for (var i = 0; i < 130; i++) {
+      pieces.push({
+        x: canvas.width / 2 + (Math.random() - 0.5) * 200, y: canvas.height / 3,
+        vx: (Math.random() - 0.5) * 14, vy: Math.random() * -16 - 4,
+        g: 0.35 + Math.random() * 0.2, size: 6 + Math.random() * 8,
+        rot: Math.random() * 360, vr: (Math.random() - 0.5) * 20,
+        color: colors[(Math.random() * colors.length) | 0],
+        emoji: Math.random() < 0.22 ? emojis[(Math.random() * emojis.length) | 0] : null,
+        life: 0
+      });
+    }
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = pieces.length - 1; i >= 0; i--) {
+      var p = pieces[i];
+      p.vy += p.g; p.x += p.vx; p.y += p.vy; p.vx *= 0.99; p.rot += p.vr; p.life++;
+      if (p.y > canvas.height + 40 || p.life > 260) { pieces.splice(i, 1); continue; }
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+      if (p.emoji) { ctx.font = (p.size * 2.4) + "px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(p.emoji, 0, 0); }
+      else { ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6); }
+      ctx.restore();
+    }
+    if (pieces.length > 0) rafId = requestAnimationFrame(tick);
+    else { ctx.clearRect(0, 0, canvas.width, canvas.height); rafId = null; }
+  }
+
+  // ---------- Google Sheet loading ----------
+  var cacheBustSerial = 0;
+  function fetchCSV(url, signal) {
+    // Cache-buster: a unique query param changes the URL so neither the browser
+    // nor Google's published-CSV edge cache can serve a stale copy. Without this,
+    // sheet edits can take minutes to appear ("zmiana arkusza nie pomaga").
+    var bust = (url.indexOf("?") >= 0 ? "&" : "?") + "_cb=" + Date.now() + "-" + (++cacheBustSerial);
+    var options = { cache: "no-store" };
+    if (signal) options.signal = signal;
+    return fetch(url + bust, options).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    });
+  }
+  function parseCSV(text) {
+    // Proper streaming parser: quotes may contain commas AND newlines (multi-line cells)
+    text = String(text).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    var rows = [], row = [], cur = "", inQ = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text.charAt(i);
+      if (inQ) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { cur += '"'; i++; }
+          else inQ = false;
+        } else cur += c;
+      } else if (c === '"') {
+        inQ = true;
+      } else if (c === ",") {
+        row.push(cur); cur = "";
+      } else if (c === "\n") {
+        row.push(cur); rows.push(row); row = []; cur = "";
+      } else {
+        cur += c;
+      }
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (cell) { return String(cell).trim() !== ""; }); });
+  }
+  function norm(s) {
+    return String(s == null ? "" : s).trim().toLowerCase()
+      .replace(/[ăâ]/g, "a").replace(/î/g, "i").replace(/[șş]/g, "s").replace(/[țţ]/g, "t");
+  }
+  function colIndex(header, names) {
+    for (var i = 0; i < header.length; i++) {
+      var h = norm(header[i]).replace(/[^a-z0-9]/g, "");
+      for (var j = 0; j < names.length; j++) if (h === names[j]) return i;
+    }
+    return -1;
+  }
+  function mapType(v) {
+    var t = norm(v);
+    if (t.indexOf("cup") === 0 || t.indexOf("coup") === 0) return "coupon";
+    if (t.indexOf("try") === 0 || t.indexOf("incear") === 0 || t.indexOf("again") !== -1) return "tryagain";
+    return "prize";
+  }
+  function safeUrl(u) { u = String(u == null ? "" : u).trim(); return /^https?:\/\//i.test(u) ? u : ""; }
+
+  // `probabilitate` is a percentage-point column, not a relative weight.
+  // Safe examples: 20%, 20, 0.2 (a decimal fraction = 20%), or 0.2%.
+  // A bare 1 means 100%; write 1% when one percentage point is intended.
+  var PROBABILITY_HEADERS = [
+    "probabilitate", "probability", "prawdopodobienstwo", "szansa", "chance"
+  ];
+  var reportedProbabilityErrors = Object.create(null);
+
+  function parseProbabilityPercent(raw) {
+    var input = String(raw == null ? "" : raw).trim();
+    if (!input) return null;
+    var compact = input.replace(/\s+/g, "");
+    var explicitPercent = /%$/.test(compact);
+    // Reject partial values such as "20abc" rather than silently coercing them.
+    if (!/^(?:\d+(?:[.,]\d+)?|[.,]\d+)%?$/.test(compact)) return null;
+    var numeric = Number(compact.replace("%", "").replace(",", "."));
+    if (!isFinite(numeric) || numeric < 0 || numeric > 100) return null;
+    var percent = explicitPercent ? numeric : (numeric <= 1 ? numeric * 100 : numeric);
+    return isFinite(percent) && percent >= 0 && percent <= 100 ? percent : null;
+  }
+
+  function reportProbabilityError(reason, slots) {
+    var signature = reason + "|" + slots.map(function (slot) {
+      return slot.probabilityRaw;
+    }).join("|");
+    if (reportedProbabilityErrors[signature]) return;
+    reportedProbabilityErrors[signature] = true;
+    if (typeof console !== "undefined" && typeof console.error === "function") {
+      console.error(
+        "[Travelminit v2] Invalid `probabilitate` configuration in Premii: " + reason +
+        ". Falling back to equal chances across " + slots.length + " wheel segments."
+      );
+    }
+  }
+
+  function applyProbabilityPolicy(slots, hasProbabilityColumn) {
+    if (!slots.length) return slots;
+    var values = [], total = 0, reason = "";
+    if (!hasProbabilityColumn) {
+      reason = "missing `probabilitate` column";
+    } else {
+      for (var i = 0; i < slots.length; i++) {
+        var value = parseProbabilityPercent(slots[i].probabilityRaw);
+        if (value === null) {
+          reason = "row " + slots[i].sourceRow + " has an empty or invalid value";
+          break;
+        }
+        values.push(value);
+        total += value;
+      }
+      if (!reason && Math.abs(total - 100) > 0.1) {
+        reason = "total is " + total.toFixed(3).replace(/\.0+$/, "") + "% (expected 100% ±0.1)";
+      }
+    }
+
+    if (reason) {
+      var equalChance = 100 / slots.length;
+      for (var j = 0; j < slots.length; j++) slots[j].probability = equalChance;
+      reportProbabilityError(reason, slots);
+      return slots;
+    }
+
+    for (var k = 0; k < slots.length; k++) slots[k].probability = values[k];
+    return slots;
+  }
+
+  function rowsToSlots(rows) {
+    if (!rows || rows.length < 2) return [];
+    var h = rows[0];
+    var ci = {
+      type: colIndex(h, ["tip", "type"]),
+      icon: colIndex(h, ["icon", "iconita", "emoji"]),
+      label: colIndex(h, ["eticheta", "label"]),
+      title: colIndex(h, ["titlu", "title"]),
+      desc: colIndex(h, ["descriere", "desc", "description"]),
+      coupon: colIndex(h, ["cod", "cupon", "coupon", "codcupon"]),
+      url: colIndex(h, ["link", "url"]),
+      probability: colIndex(h, PROBABILITY_HEADERS)
+    };
+    if (ci.type < 0 && ci.label < 0 && ci.url < 0) {
+      ci = { type: 0, icon: 1, label: 2, title: 3, desc: 4, coupon: 5, url: 6, probability: -1 };
+    }
+    function g(row, idx) { return idx >= 0 && idx < row.length ? String(row[idx]).trim() : ""; }
+    var slots = [];
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r];
+      var type = mapType(g(row, ci.type));
+      var label = g(row, ci.label), title = g(row, ci.title);
+      if (!label && !title && type !== "tryagain") continue;
+      slots.push({
+        type: type, icon: g(row, ci.icon), label: label, title: title,
+        desc: g(row, ci.desc), coupon: g(row, ci.coupon), url: safeUrl(g(row, ci.url)),
+        probabilityRaw: g(row, ci.probability), sourceRow: r + 1
+      });
+    }
+    return applyProbabilityPolicy(slots, ci.probability >= 0);
+  }
+  function applyTextsCSV(texts, rows) {
+    if (!rows || rows.length < 1) return;
+    var start = (rows[0] && (norm(rows[0][0]) === "cheie" || norm(rows[0][0]) === "key")) ? 1 : 0;
+    var map = {};
+    for (var r = start; r < rows.length; r++) {
+      var k = norm(rows[r][0]).replace(/[^a-z0-9]/g, "");
+      if (k) map[k] = rows[r][1] != null ? String(rows[r][1]) : "";
+    }
+    var keymap = {
+      topline: "topline", headline: "headline", buton: "spinButton", spinbutton: "spinButton",
+      centru: "hub", hub: "hub", ctapremiu: "ctaPrize", ctaprize: "ctaPrize",
+      ctacupon: "ctaCoupon", ctacoupon: "ctaCoupon", tryagaintitle: "tryAgainTitle",
+      titlumaiincearca: "tryAgainTitle", tryagaindesc: "tryAgainDesc", descrieremaiincearca: "tryAgainDesc",
+      prelivetopline: "preLiveTopline", preliveheadline: "preLiveHeadline", prelivebody: "preLiveBody",
+      prelivespinbutton: "preLiveSpinButton", prelivehub: "preLiveHub"
+    };
+    Object.keys(map).forEach(function (k) { if (keymap[k] && map[k] !== "") texts[keymap[k]] = map[k]; });
+    var parts = [map.body1, map.body2, map.body3].filter(Boolean);
+    if (parts.length) texts.body = parts.join("\n");
+    else if (map.body) texts.body = map.body;
+  }
+  function statusValue(value) {
+    var v = String(value == null ? "" : value).trim();
+    if (v === "0") return false;
+    if (v === "1") return true;
+    return null;
+  }
+  function parseCampaignStatus(text) {
+    var rows = parseCSV(text);
+    if (!rows.length) throw new Error("Statusul campaniei este gol");
+    var statusColumn = colIndex(rows[0], ["status", "live", "islive", "campaignstatus"]);
+    var r, c, value;
+    if (statusColumn >= 0) {
+      // Accept both common Google Sheets layouts:
+      //   live\n0  (column) and live,0 (the existing legacy Status tab).
+      value = statusValue(rows[0][statusColumn + 1]);
+      if (value !== null) return value;
+      for (r = 1; r < rows.length; r++) {
+        value = statusValue(rows[r][statusColumn]);
+        if (value !== null) return value;
+      }
+    } else {
+      for (r = 0; r < rows.length; r++) {
+        for (c = 0; c < rows[r].length; c++) {
+          value = statusValue(rows[r][c]);
+          if (value !== null) return value;
+        }
+      }
+    }
+    throw new Error("Statusul campaniei trebuie să fie 0 sau 1");
+  }
+  function loadCampaignState(options) {
+    options = options || {};
+    var cfg = deepCopy(options.baseConfig || config || DEFAULT_CONFIG);
+    // Start both reads together. Status 0 returns immediately after its own
+    // response, while Status 1 also requires a valid current Prizes response.
+    var statusRequest = SHEET.statusUrl ? fetchCSV(SHEET.statusUrl, options.signal).then(parseCampaignStatus) : Promise.resolve(true);
+    var prizesRequest = SHEET.prizesUrl ? fetchCSV(SHEET.prizesUrl, options.signal).then(function (text) {
+      return { text: text };
+    }, function (error) {
+      return { error: error };
+    }) : Promise.resolve({ error: new Error("Lipsește URL-ul pentru premii") });
+
+    return statusRequest.then(function (isLive) {
+      // Status decides which Texte block is safe to display. Report it before
+      // waiting for Premii so the header and wheel do not share one loader.
+      if (typeof options.onStatusResolved === "function") options.onStatusResolved(isLive);
+      if (!isLive) return { live: false, config: cfg };
+      return prizesRequest.then(function (response) {
+        if (response.error) throw response.error;
+        var slots = rowsToSlots(parseCSV(response.text));
+        if (slots.length < 2) {
+          if (options.requireLivePrizes) throw new Error("Configurația live nu conține suficiente premii");
+          return { live: true, config: cfg };
+        }
+        cfg.slots = slots;
+        return { live: true, config: cfg };
+      });
+    });
+  }
+
+  // Texts are presentation only. Background refreshes fetch them separately,
+  // so a slow Texts tab can never delay a status/prize decision or a spin.
+  var textRefreshSerial = 0;
+  var pendingTexts = null;
+  var initialTextsPending = !!SHEET.textsUrl;
+
+  function finishInitialTextsLoad() {
+    if (!initialTextsPending) return;
+    initialTextsPending = false;
+    document.body.classList.remove("texts-loading");
+    finishInitialCopyLoad();
+  }
+
+  function applyTextsSnapshot(nextTexts) {
+    config.texts = nextTexts;
+    // A Texte response may beat Status. Keep the authoritative values, but do
+    // not decide whether the live or pre-live block belongs on screen yet.
+    if (statusGateEnabled && !initialCampaignStatusKnown) {
+      finishInitialTextsLoad();
+      return;
+    }
+    if (campaignLive) applyTexts(config);
+    else {
+      applyPreLiveTexts(config);
+      setDisabled(true);
+    }
+  }
+
+  function applyPendingTextsIfIdle() {
+    if (!pendingTexts || spinning || preparingSpin) return;
+    var nextTexts = pendingTexts;
+    pendingTexts = null;
+    applyTextsSnapshot(nextTexts);
+    finishInitialTextsLoad();
+  }
+
+  function refreshTextsAsync() {
+    if (!SHEET.textsUrl) return;
+    var serial = ++textRefreshSerial;
+    fetchCSV(SHEET.textsUrl).then(function (text) {
+      if (serial !== textRefreshSerial) return;
+      // If another response is already queued during a spin, build on that
+      // newer snapshot rather than dropping fields it supplied.
+      var nextTexts = deepCopy(pendingTexts || config.texts);
+      applyTextsCSV(nextTexts, parseCSV(text));
+      // Copy is not allowed to reflow the page or change a result while the
+      // player is preparing / watching a spin. Keep it for the first idle tick.
+      if (spinning || preparingSpin) {
+        pendingTexts = nextTexts;
+        return;
+      }
+      applyTextsSnapshot(nextTexts);
+      finishInitialTextsLoad();
+    }).catch(function () {
+      if (serial !== textRefreshSerial) return;
+      // Until the first real Texte response, keep the top shimmer in place.
+      // Focus / the active-tab heartbeat will retry; never reveal stale copy.
+    });
+  }
+
+  // ---------- Init ----------
+  // All public configuration comes from the fixed Premii, Texte and Status
+  // Sheet tabs above. URL query/hash values intentionally have no effect.
+  statusGateEnabled = !!SHEET.statusUrl;
+  initialCampaignStatusKnown = !statusGateEnabled;
+  if (BARE) document.body.classList.add("bare");
+  if (initialTextsPending) document.body.classList.add("texts-loading");
+  else document.body.classList.remove("texts-loading");
+  if (initialTextsPending || !initialCampaignStatusKnown) document.body.classList.add("copy-loading");
+  else document.body.classList.remove("copy-loading");
+
+  function render(cfg) { applyTexts(cfg); buildWheel(cfg); }
+
+  if (SHEET.prizesUrl || statusGateEnabled) {
+    // Show the wheel instantly with shimmering placeholders, then fade in the real
+    // content once the sheet loads — and only then enable the buttons.
+    buildSkeleton();
+    document.body.classList.add("skeleton");
+    hub.disabled = true;
+    spinBtn.disabled = true;
+    var settled = false;
+    function settle(state) {
+      if (settled) return;
+      settled = true;
+
+      // FLIP: record where the wheel / button / footer sit now (skeleton layout)
+      var movers = [document.querySelector(".stage"), spinBtn, document.querySelector("footer")].filter(Boolean);
+      var firstTop = movers.map(function (el) { return el.getBoundingClientRect().top; });
+
+      if (state && state.live) {
+        campaignLive = true;
+        document.body.classList.remove("pre-live");
+        // The Prizes request may have started before an independent Texts
+        // refresh. Preserve that newer copy when its slot snapshot lands.
+        var initialConfig = deepCopy(state.config);
+        initialConfig.texts = deepCopy(config.texts);
+        config = initialConfig;
+        applyTexts(config);                     // header text fills in → its height changes
+        buildWheel(config);
+      } else if (statusGateEnabled) {
+        enterPreLiveMode();
+      } else {
+        campaignLive = true;
+        document.body.classList.remove("pre-live");
+        applyTexts(config);
+        buildWheel(config);
+      }
+
+      // ...then glide them from the old position to the new one instead of jumping
+      var deltas = movers.map(function (el, i) { return firstTop[i] - el.getBoundingClientRect().top; });
+      movers.forEach(function (el, i) {
+        if (Math.abs(deltas[i]) < 1) return;
+        el.style.transition = "none";
+        el.style.transform = "translateY(" + deltas[i] + "px)";
+      });
+      void document.body.offsetWidth;           // commit the inverted position
+      movers.forEach(function (el, i) {
+        if (Math.abs(deltas[i]) < 1) return;
+        el.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
+        el.style.transform = "translateY(0)";
+      });
+      setTimeout(function () {
+        movers.forEach(function (el) { el.style.transition = ""; el.style.transform = ""; });
+      }, 560);
+
+      wheel.style.animation = "none";
+      void wheel.offsetWidth;                   // restart the wheel fade-in
+      wheel.style.animation = "tmfadein 0.4s ease";
+      document.body.classList.remove("skeleton");
+      setDisabled(!campaignLive);
+    }
+    var initialCampaignStateSerial = ++campaignStateRequestSerial;
+    // Start Texte at the same time as Status + Premii. The text layer remains
+    // invisible until this first response, so it cannot flash stale copy.
+    refreshTextsAsync();
+    loadCampaignState({
+      baseConfig: config,
+      requireLivePrizes: statusGateEnabled,
+      onStatusResolved: noteInitialCampaignStatus
+    }).then(function (state) {
+      state.campaignStateRequestSerial = initialCampaignStateSerial;
+      if (settled) applyCampaignState(state);
+      else settle(state);
+    }, function (error) {
+      error = error || {};
+      error.campaignStateRequestSerial = initialCampaignStateSerial;
+      if (!settled) settle(null);
+      else if (statusGateEnabled && acceptCampaignStateSerial(error.campaignStateRequestSerial)) enterPreLiveMode();
+    });
+    setTimeout(function () { settle(null); }, 4000);   // fallback: built-in values if the sheet is slow/unreachable
+  } else {
+    document.body.classList.remove("skeleton");
+    finishInitialCopyLoad();
+    render(config);
+  }
+
+  // ---------- Live refresh of prizes ----------
+  // The wheel reads the sheet only once, at load. A session opened early (e.g. the
+  // first people to get the link, right at 12:00) would otherwise keep showing those
+  // first-loaded prizes forever, even after the sheet is updated — exactly the
+  // "works for most, stale only for the first openers" symptom. Re-read the sheet
+  // whenever the tab regains focus or is restored from bfcache, plus an active-tab
+  // heartbeat, so a long-open session never serves stale prizes. Every actual spin
+  // also makes a strict live request before its winning segment is selected.
+  var LIVE_CONFIG_TIMEOUT_MS = 3500;
+  var liveCampaignRequest = null;
+  var lastBackgroundRefresh = 0;
+
+  function sameConfig(a, b) {
+    return JSON.stringify([a.slots, a.texts]) === JSON.stringify([b.slots, b.texts]);
+  }
+  function requestLiveCampaignState() {
+    var requestSerial = ++campaignStateRequestSerial;
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    var timeoutId;
+    var timeout = new Promise(function (_, reject) {
+      timeoutId = setTimeout(function () {
+        if (controller) controller.abort();
+        reject(new Error("Actualizarea premiilor a expirat"));
+      }, LIVE_CONFIG_TIMEOUT_MS);
+    });
+    var request = loadCampaignState({
+      signal: controller ? controller.signal : null,
+      requireLivePrizes: true,
+      baseConfig: config,
+      onStatusResolved: noteInitialCampaignStatus
+    });
+    return Promise.race([request, timeout]).then(function (state) {
+      clearTimeout(timeoutId);
+      state.campaignStateRequestSerial = requestSerial;
+      return state;
+    }, function (error) {
+      clearTimeout(timeoutId);
+      // Preserve the serial on failures as well: an older failed background
+      // read must not force pre-live after a newer strict result was accepted.
+      throw { campaignStateRequestSerial: requestSerial, cause: error };
+    });
+  }
+  function getFreshCampaignState() {
+    if (liveCampaignRequest) return liveCampaignRequest;
+    liveCampaignRequest = requestLiveCampaignState();
+    return liveCampaignRequest.then(function (state) {
+      liveCampaignRequest = null;
+      return state;
+    }, function (error) {
+      liveCampaignRequest = null;
+      throw error;
+    });
+  }
+  function getFreshCampaignStateForSpin() {
+    // Deliberately do not share the background request. A spin must initiate
+    // its own cache-busted Status + Prizes reads immediately before selection.
+    return requestLiveCampaignState();
+  }
+  function refreshIfIdle(force) {
+    if (document.visibilityState !== "visible") return;
+    if (spinning || preparingSpin) return;
+    var now = Date.now();
+    if (now - lastBackgroundRefresh < 1000) return;                // focus and visibility often arrive together
+    lastBackgroundRefresh = now;
+    refreshTextsAsync();
+    getFreshCampaignState().then(function (state) {
+      if (spinning || preparingSpin) return;
+      applyCampaignState(state);
+    }).catch(function (error) {
+      // A configured Status URL is a release safety gate. If it cannot be
+      // read, stay on the harmless placeholder rather than keep a live draw.
+      // Never disrupt an in-progress or pre-spin interaction. Also reject a
+      // late failure if a newer Status/Prizes result has already been applied.
+      if (spinning || preparingSpin) return;
+      if (statusGateEnabled && acceptCampaignStateSerial(error && error.campaignStateRequestSerial)) {
+        enterPreLiveMode();
+        applyPendingTextsIfIdle();
+      }
+    });
+  }
+  if (SHEET.prizesUrl || statusGateEnabled) {
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") refreshIfIdle(true);
+    });
+    window.addEventListener("focus", function () { refreshIfIdle(true); });
+    window.addEventListener("pageshow", function (e) { if (e.persisted) refreshIfIdle(true); }); // bfcache restore
+    setInterval(function () {
+      refreshIfIdle(false);
+    }, 60000);                                                       // active-tab heartbeat
+  }
+})();
+</script>
+</body>
+</html>
